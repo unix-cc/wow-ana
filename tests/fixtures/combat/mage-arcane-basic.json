@@ -1,0 +1,177 @@
+{
+  "meta": {
+    "id": "mage-arcane-basic",
+    "specName": "Arcane",
+    "specId": 62,
+    "knowledgeVersion": "1.4.0",
+    "fightDateIso": "2026-06-01T00:00:50.000Z",
+    "durationMs": 60000,
+    "description": "60s rotation scene: Arcane Salvo stacked to 12 by t+11s, Arcane Missiles at t+20s (blast filler is the expected action at salvo 12; orb rule is unobservable).",
+    "expectedRotationFinding": {
+      "scenario": "st",
+      "verdict": "mistake",
+      "expectedRuleId": "arcane.blast_builder",
+      "actualAbilityKey": "arcane_missiles"
+    }
+  },
+  "report": {
+    "code": "FIXTURE-ARCANE",
+    "title": "Fixture: mage-arcane-basic",
+    "startTime": 1780272000000,
+    "endTime": 1780272110000,
+    "zone": {
+      "id": 1000,
+      "name": "Nerub-ar Palace"
+    }
+  },
+  "fight": {
+    "id": 8,
+    "startTime": 50000,
+    "endTime": 110000
+  },
+  "player": {
+    "id": 1,
+    "name": "MageFixture",
+    "type": "Player",
+    "specName": "Arcane",
+    "specId": 62
+  },
+  "events": [
+    {
+      "timestamp": 50000,
+      "type": "buff",
+      "rawType": "applybuff",
+      "sourceId": 1,
+      "targetId": 1,
+      "abilityId": 384452,
+      "abilityName": "Arcane Salvo",
+      "fightId": 8
+    },
+    {
+      "timestamp": 51000,
+      "type": "buff",
+      "rawType": "applybuffstack",
+      "sourceId": 1,
+      "targetId": 1,
+      "abilityId": 384452,
+      "abilityName": "Arcane Salvo",
+      "fightId": 8
+    },
+    {
+      "timestamp": 52000,
+      "type": "buff",
+      "rawType": "applybuffstack",
+      "sourceId": 1,
+      "targetId": 1,
+      "abilityId": 384452,
+      "abilityName": "Arcane Salvo",
+      "fightId": 8
+    },
+    {
+      "timestamp": 53000,
+      "type": "buff",
+      "rawType": "applybuffstack",
+      "sourceId": 1,
+      "targetId": 1,
+      "abilityId": 384452,
+      "abilityName": "Arcane Salvo",
+      "fightId": 8
+    },
+    {
+      "timestamp": 54000,
+      "type": "buff",
+      "rawType": "applybuffstack",
+      "sourceId": 1,
+      "targetId": 1,
+      "abilityId": 384452,
+      "abilityName": "Arcane Salvo",
+      "fightId": 8
+    },
+    {
+      "timestamp": 55000,
+      "type": "buff",
+      "rawType": "applybuffstack",
+      "sourceId": 1,
+      "targetId": 1,
+      "abilityId": 384452,
+      "abilityName": "Arcane Salvo",
+      "fightId": 8
+    },
+    {
+      "timestamp": 56000,
+      "type": "buff",
+      "rawType": "applybuffstack",
+      "sourceId": 1,
+      "targetId": 1,
+      "abilityId": 384452,
+      "abilityName": "Arcane Salvo",
+      "fightId": 8
+    },
+    {
+      "timestamp": 57000,
+      "type": "buff",
+      "rawType": "applybuffstack",
+      "sourceId": 1,
+      "targetId": 1,
+      "abilityId": 384452,
+      "abilityName": "Arcane Salvo",
+      "fightId": 8
+    },
+    {
+      "timestamp": 58000,
+      "type": "buff",
+      "rawType": "applybuffstack",
+      "sourceId": 1,
+      "targetId": 1,
+      "abilityId": 384452,
+      "abilityName": "Arcane Salvo",
+      "fightId": 8
+    },
+    {
+      "timestamp": 59000,
+      "type": "buff",
+      "rawType": "applybuffstack",
+      "sourceId": 1,
+      "targetId": 1,
+      "abilityId": 384452,
+      "abilityName": "Arcane Salvo",
+      "fightId": 8
+    },
+    {
+      "timestamp": 60000,
+      "type": "buff",
+      "rawType": "applybuffstack",
+      "sourceId": 1,
+      "targetId": 1,
+      "abilityId": 384452,
+      "abilityName": "Arcane Salvo",
+      "fightId": 8
+    },
+    {
+      "timestamp": 61000,
+      "type": "buff",
+      "rawType": "applybuffstack",
+      "sourceId": 1,
+      "targetId": 1,
+      "abilityId": 384452,
+      "abilityName": "Arcane Salvo",
+      "fightId": 8
+    },
+    {
+      "timestamp": 65000,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 30451,
+      "abilityName": "Arcane Blast",
+      "fightId": 8
+    },
+    {
+      "timestamp": 70000,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 5143,
+      "abilityName": "Arcane Missiles",
+      "fightId": 8
+    }
+  ]
+}

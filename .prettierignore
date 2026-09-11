@@ -1,0 +1,7 @@
+AGENT.MD
+pnpm-lock.yaml
+dist/
+node_modules/
+coverage/
+*.db
+*.sqlite

@@ -1,0 +1,79 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>WCL AI 战斗分析</title>
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <aside id="sidebar">
+      <div class="sidebar-header">
+        <button id="newChat" type="button">＋ 新建对话</button>
+      </div>
+      <div id="sessionList" class="session-list"></div>
+    </aside>
+
+    <div class="main-col">
+      <header>
+        <h1>WCL AI 战斗分析</h1>
+        <button id="settingsToggle" type="button">设置</button>
+      </header>
+
+      <section id="settings" class="settings hidden">
+        <h2>LLM 配置</h2>
+        <p class="hint">
+          填入你自己的模型接口（OpenAI
+          兼容）。配置只保存在当前浏览器，不会上传。
+        </p>
+        <label>
+          Base URL
+          <input
+            id="sBaseUrl"
+            type="text"
+            placeholder="https://api.openai.com/v1"
+            autocomplete="off"
+          />
+        </label>
+        <label>
+          API Key
+          <input
+            id="sApiKey"
+            type="password"
+            placeholder="sk-..."
+            autocomplete="off"
+          />
+        </label>
+        <label>
+          模型
+          <input
+            id="sModel"
+            type="text"
+            placeholder="gpt-4o-mini"
+            autocomplete="off"
+          />
+        </label>
+        <button id="saveSettings" type="button">保存</button>
+        <span id="settingsStatus" class="status"></span>
+      </section>
+
+      <main id="chat" aria-live="polite">
+        <div class="welcome">
+          粘贴 WCL 战斗日志链接开始分析，例如：<br />
+          <code>https://www.warcraftlogs.com/reports/xxxx?fight=8</code>
+        </div>
+      </main>
+
+      <footer>
+        <textarea
+          id="input"
+          rows="2"
+          placeholder="粘贴 WCL 链接，或回复角色名 / 战斗编号…"
+        ></textarea>
+        <button id="send" type="button">发送</button>
+      </footer>
+    </div>
+
+    <script src="/app.js"></script>
+  </body>
+</html>

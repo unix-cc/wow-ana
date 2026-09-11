@@ -1,0 +1,200 @@
+{
+  "meta": {
+    "id": "hunter-bm-basic",
+    "specName": "Beast Mastery",
+    "specId": 253,
+    "knowledgeVersion": "1.0.0",
+    "fightDateIso": "2026-06-01T00:00:50.000Z",
+    "durationMs": 60000,
+    "description": "60s teaching counter-example: cobra spam first 30s, then AFK. Kill Command only 4x, no Barbed Shot.",
+    "expectedFindingIds": [
+      "bm_hunter.kill_command_usage",
+      "bm_hunter.gcd_idle",
+      "bm_hunter.barbed_shot_uptime"
+    ]
+  },
+  "report": {
+    "code": "FIXTURE-HBM",
+    "title": "Fixture: hunter-bm-basic",
+    "startTime": 1780272000000,
+    "endTime": 1780272110000,
+    "zone": {
+      "id": 1000,
+      "name": "Nerub-ar Palace"
+    }
+  },
+  "fight": {
+    "id": 8,
+    "startTime": 50000,
+    "endTime": 110000
+  },
+  "player": {
+    "id": 1,
+    "name": "HunterFixture",
+    "type": "Player",
+    "specName": "Beast Mastery",
+    "specId": 253
+  },
+  "events": [
+    {
+      "timestamp": 50000,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 34026,
+      "abilityName": "Kill Command",
+      "fightId": 8
+    },
+    {
+      "timestamp": 51500,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 53000,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 54500,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 56000,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 34026,
+      "abilityName": "Kill Command",
+      "fightId": 8
+    },
+    {
+      "timestamp": 57500,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 59000,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 60500,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 62000,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 34026,
+      "abilityName": "Kill Command",
+      "fightId": 8
+    },
+    {
+      "timestamp": 63500,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 65000,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 66500,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 68000,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 34026,
+      "abilityName": "Kill Command",
+      "fightId": 8
+    },
+    {
+      "timestamp": 69500,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 71000,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 72500,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 74000,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 75500,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 77000,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    },
+    {
+      "timestamp": 78500,
+      "type": "cast",
+      "sourceId": 1,
+      "abilityId": 193455,
+      "abilityName": "Cobra Shot",
+      "fightId": 8
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+{
+  "name": "@wcl/web",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -p tsconfig.json",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run",
+    "lint": "eslint src",
+    "start": "node dist/index.js"
+  },
+  "dependencies": {
+    "@wcl/ai-reasoning": "workspace:*",
+    "@wcl/analysis-engine": "workspace:*",
+    "@wcl/application": "workspace:*",
+    "@wcl/domain": "workspace:*",
+    "@wcl/shared": "workspace:*",
+    "@wcl/storage": "workspace:*",
+    "@wcl/wcl-client": "workspace:*",
+    "zod": "^3.24.0"
+  }
+}

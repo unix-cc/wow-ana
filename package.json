@@ -1,0 +1,26 @@
+{
+  "name": "wcl-ai-analyzer",
+  "version": "0.1.0",
+  "private": true,
+  "description": "AI-powered Warcraft Logs combat analysis platform",
+  "packageManager": "pnpm@12.3.4",
+  "scripts": {
+    "build": "pnpm -r build",
+    "test": "pnpm -r test",
+    "typecheck": "pnpm -r typecheck",
+    "lint": "pnpm -r lint",
+    "ssr-smoke": "node scripts/ssr-smoke.mjs",
+    "preview": "node scripts/preview-conversation.mjs",
+    "ability-names": "node scripts/sync-ability-names.mjs",
+    "format": "prettier --write ."
+  },
+  "devDependencies": {
+    "@eslint/js": "^9.17.0",
+    "@types/node": "^22.10.0",
+    "eslint": "^9.17.0",
+    "prettier": "^3.4.0",
+    "typescript": "^5.7.0",
+    "typescript-eslint": "^8.19.0",
+    "vitest": "^3.0.0"
+  }
+}
