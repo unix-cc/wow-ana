@@ -44,7 +44,6 @@ Application Service (packages/application)
 ## 安装
 
 ```bash
-cd C:\code\wcl-ana
 corepack enable
 pnpm install
 pnpm build
