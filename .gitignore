@@ -5,6 +5,9 @@ node_modules/
 dist/
 build/
 
+# SSR smoke-test bundle（apps/web-ui/.ssr-smoke.mjs 的输入，由 esbuild 临时生成，不入库）
+.ssr-build/
+
 # Env / secrets
 .env
 .env.local
