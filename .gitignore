@@ -9,13 +9,16 @@ build/
 .env
 .env.local
 
-# Database
+# Database (SQLite)
+# 注意：-wal / -shm / -journal 是独立后缀，只写 *.db 挡不住（本项目实测约 11MB）。
 *.db
 *.db-wal
 *.db-shm
 *.db-journal
 *.sqlite
 *.sqlite3
+*.sqlite-wal
+*.sqlite-shm
 
 # Logs
 *.log
@@ -35,6 +38,7 @@ Thumbs.db
 # Playwright / browser automation
 .playwright-cli/
 
-# Generated debugging preview (scripts/preview-conversation.mjs)
-.workbuddy/preview/
+# AI 工作区：记忆日志、预览产物等一律不入库（磁盘保留）
+# 2026-09-11 起整体忽略，此前纳入版本控制的 .workbuddy/memory/* 已取消跟踪
+.workbuddy/
 
