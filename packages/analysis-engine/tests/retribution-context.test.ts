@@ -27,7 +27,7 @@ describe('RetributionPaladinAnalyzer', () => {
     expect(finding).toBeDefined();
     expect(finding?.severity).toBe('high');
     expect(finding?.confidence).toBe(0.9);
-    expect(result.metrics.knowledgeVersion).toBe('1.0.0');
+    expect(result.metrics.knowledgeVersion).toBe('1.1.0');
   });
 
   it('stays silent when cooldowns are used on time', () => {

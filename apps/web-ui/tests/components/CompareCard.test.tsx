@@ -148,6 +148,97 @@ describe('CompareCard', () => {
   });
 });
 
+describe('CompareCard burst phase', () => {
+  const phase = {
+    comparable: true,
+    anchorsMine: [{ name: '涌动 (Arcane Surge)', castCount: 12 }],
+    anchorsTheirs: [{ name: '涌动 (Arcane Surge)', castCount: 15 }],
+    inBurstDecisionsMine: 84,
+    inBurstDecisionsTheirs: 110,
+    fillerDecisionsMine: 541,
+    fillerDecisionsTheirs: 702,
+    perWindowDecisionsMine: 7.0,
+    perWindowDecisionsTheirs: 7.3,
+    inBurstCorrectRateMine: 74.2,
+    inBurstCorrectRateTheirs: 93.1,
+    fillerCorrectRateMine: 88.4,
+    fillerCorrectRateTheirs: 89.5,
+  };
+
+  it('renders the burst-vs-filler phase table when the comparison carries it', () => {
+    render(<CompareCard comparison={comparison({ phase })} />);
+    expect(screen.getByText('爆发期 vs 非爆发期手法')).toBeTruthy();
+    expect(screen.getByText(/每次爆发窗口的决策数/)).toBeTruthy();
+    expect(screen.getByText('爆发期内正确率')).toBeTruthy();
+    expect(screen.getByText('74.2%')).toBeTruthy();
+    expect(screen.getByText('93.1%')).toBeTruthy();
+    expect(screen.getByText(/涌动 \(Arcane Surge\) ×12/)).toBeTruthy();
+    expect(screen.getByText(/涌动 \(Arcane Surge\) ×15/)).toBeTruthy();
+    // Honest caveat: the window is cast-anchored with knowledge durations.
+    expect(screen.getByText(/只用于分桶/)).toBeTruthy();
+  });
+
+  it('explains non-comparable phases as a talent-shape difference, not a verdict', () => {
+    render(
+      <CompareCard
+        comparison={comparison({
+          phase: { ...phase, comparable: false, anchorsTheirs: [] },
+        })}
+      />,
+    );
+    expect(screen.getByText(/天赋构型差异/)).toBeTruthy();
+    expect(screen.getByText(/不是手法定责/)).toBeTruthy();
+  });
+});
+
+describe('CompareCard rule adherence', () => {
+  const rules = {
+    rules: [
+      {
+        ruleId: 'arcane.barrage_salvo25',
+        label: '弹幕 (Arcane Barrage)',
+        mineDecisions: 10,
+        mineAdherenceRate: 50,
+        theirsDecisions: 20,
+        theirsAdherenceRate: 95,
+        deltaPp: -45,
+        mineMistakes: 2,
+        theirsMistakes: 0,
+        confidence: 0.8,
+        comparable: true,
+      },
+      {
+        ruleId: 'arcane.surge_low_sample',
+        label: '涌动 (Arcane Surge)',
+        mineDecisions: 2,
+        mineAdherenceRate: 50,
+        theirsDecisions: 2,
+        theirsAdherenceRate: 100,
+        mineMistakes: 0,
+        theirsMistakes: 0,
+        confidence: 0.7,
+        comparable: false,
+      },
+    ],
+  };
+
+  it('renders the per-rule obedience table with rates and deltas', () => {
+    render(<CompareCard comparison={comparison({ rules })} />);
+    expect(screen.getByText('规则遵守度（条件出现时，是否打了该打的技能）')).toBeTruthy();
+    expect(screen.getByText('弹幕 (Arcane Barrage)')).toBeTruthy();
+    expect(screen.getAllByText('50%').length).toBeGreaterThan(0);
+    expect(screen.getByText('95%')).toBeTruthy();
+    expect(screen.getByText('-45pp')).toBeTruthy();
+    expect(screen.getByText('失误 2/0')).toBeTruthy();
+  });
+
+  it('labels below-sample rows as 样本少 instead of inventing a delta', () => {
+    render(<CompareCard comparison={comparison({ rules })} />);
+    expect(screen.getAllByText('样本少').length).toBeGreaterThan(0);
+    expect(screen.queryByText('-50pp')).toBeNull();
+  });
+});
+
 describe('ReferenceCard compare trigger', () => {
   const reference = {
     encounterName: '诸王之眠',

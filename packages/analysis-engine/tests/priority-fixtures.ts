@@ -2,6 +2,7 @@ import type { KnowledgeSource } from '@wcl/domain';
 import type {
   AbilityKnowledge,
   BuffKnowledge,
+  CooldownKnowledge,
   PriorityRule,
   ResourceKnowledge,
   SpecKnowledge,
@@ -71,11 +72,12 @@ export interface PriorityKnowledgeOverrides {
   abilities?: AbilityKnowledge[];
   buffs?: BuffKnowledge[];
   resources?: ResourceKnowledge[];
+  cooldowns?: CooldownKnowledge[];
   rules: PriorityRule[];
 }
 
 export function makePriorityKnowledge(overrides: PriorityKnowledgeOverrides): SpecKnowledge {
-  const { abilities, buffs, resources, rules } = overrides;
+  const { abilities, buffs, resources, cooldowns, rules } = overrides;
   return {
     specId: 999,
     specName: 'TestSpec',
@@ -85,7 +87,7 @@ export function makePriorityKnowledge(overrides: PriorityKnowledgeOverrides): Sp
     buffs: buffs ?? [],
     debuffs: [],
     resources: resources ?? [],
-    cooldowns: [],
+    cooldowns: cooldowns ?? [],
     priority: rules,
     sources: [TEST_SOURCE],
   };

@@ -37,7 +37,7 @@ export const ELEMENTAL_SHAMAN_KNOWLEDGE: SpecKnowledge = {
   specName: 'Elemental',
   className: 'Shaman',
   patch: 'current',
-  knowledgeVersion: '1.0.0',
+  knowledgeVersion: '1.1.0',
   effectiveFrom: '2026-01-01',
 
   abilities: [
@@ -114,6 +114,9 @@ export const ELEMENTAL_SHAMAN_KNOWLEDGE: SpecKnowledge = {
       name: '风暴守护者 (Stormkeeper)',
       cooldownMs: 60_000,
       kind: 'offensive',
+      // buff 时长 15s（wowhead spell 页；实际机制是强化下 3 发闪电箭，
+      // 用 buff 时长作近似窗口——仅分桶不作判定）。
+      burstDurationMs: 15_000,
       source: LOG_VERIFIED,
       confidence: 0.9,
     },
@@ -123,6 +126,9 @@ export const ELEMENTAL_SHAMAN_KNOWLEDGE: SpecKnowledge = {
       name: '火元素 (Fire Elemental)',
       cooldownMs: 120_000,
       kind: 'offensive',
+      // 火元素持续约 25-30s（icy-veins 12.1 元素萨：大招召唤期）；
+      // 取 30s 作近似窗口——仅分桶不作判定。
+      burstDurationMs: 30_000,
       source: LOG_VERIFIED,
       confidence: 0.9,
     },

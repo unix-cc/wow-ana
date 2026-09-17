@@ -42,7 +42,7 @@ export const RETRIBUTION_PALADIN_KNOWLEDGE: SpecKnowledge = {
   specName: 'Retribution',
   className: 'Paladin',
   patch: 'current',
-  knowledgeVersion: '1.0.0',
+  knowledgeVersion: '1.1.0',
   effectiveFrom: '2026-01-01',
 
   abilities: [
@@ -181,6 +181,9 @@ export const RETRIBUTION_PALADIN_KNOWLEDGE: SpecKnowledge = {
       name: '复仇之怒 (Avenging Wrath)',
       cooldownMs: 120_000,
       kind: 'offensive',
+      // 20s buff window (icy-veins 12.1); cast-anchored burst bucketing
+      // only — 辐耀荣光构型下由灰烬觉醒自动触发，未手动施放不一定是错误。
+      burstDurationMs: 20_000,
       source: SPELL_DUMP,
       confidence: 0.9,
     },

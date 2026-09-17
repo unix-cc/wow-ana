@@ -92,8 +92,8 @@ describe('knowledge structure', () => {
     }
   });
 
-  it('anchors the Blood DK Bone Shield maintenance priority (v1.1.0)', () => {
-    expect(BLOOD_DEATH_KNIGHT_KNOWLEDGE.knowledgeVersion).toBe('1.1.0');
+  it('anchors the Blood DK Bone Shield maintenance priority (v1.2.0)', () => {
+    expect(BLOOD_DEATH_KNIGHT_KNOWLEDGE.knowledgeVersion).toBe('1.2.0');
     const boneShield = BLOOD_DEATH_KNIGHT_KNOWLEDGE.buffs.find(
       (b) => b.key === 'bone_shield',
     );
@@ -161,6 +161,25 @@ describe('knowledge structure', () => {
     expect(cd).toBeDefined();
     expect(ability).toBeDefined();
     expect(cd?.cooldownMs).toBe(ability?.cooldownMs);
+  });
+
+  it('keeps burst anchors castable: burstDurationMs implies a verified abilityId', () => {
+    // Burst windows are cast-anchored (WCL Buffs does not return burst-aura
+    // events — probe-verified 2026-09), so an anchor without a spell id can
+    // never be matched to a cast and must not be declared.
+    for (const entry of ALL) {
+      for (const cd of entry.cooldowns) {
+        if (cd.burstDurationMs === undefined) continue;
+        expect(
+          cd.abilityId,
+          `${entry.specName} ${cd.key}: burstDurationMs needs a verified abilityId`,
+        ).toBeDefined();
+        expect(
+          cd.burstDurationMs,
+          `${entry.specName} ${cd.key}: burstDurationMs must be positive`,
+        ).toBeGreaterThan(0);
+      }
+    }
   });
 
   it('resolves every condition reference to a known key', () => {

@@ -426,14 +426,69 @@ export function evaluatePriority(input: EvaluateInput): PriorityEvaluationResult
     else if (scenario === 'st') stVotes += 1;
 
     const record = evaluateDecision(decision, ctx);
+    if (record.expectedKey !== undefined) {
+      record.expectedAbilityId =
+        index.abilitiesByKey.get(record.expectedKey)?.abilityId;
+    }
     decisions.push(record);
     breakdown[record.verdict] += 1;
+  }
+
+  // ---- cast-anchored burst windows
+  // WCL's Buffs channel does not return burst-aura events (probe-verified
+  // 2026-09), so a burst window is [castTime, castTime + burstDurationMs]
+  // where the cast is the burst ability's own decision. Bucketing only: the
+  // `inBurst` flag never feeds a verdict, it only splits decisions for the
+  // phase-level comparison.
+  const burstAnchors: Array<{
+    key: string;
+    name: string;
+    abilityId: number;
+    durationMs: number;
+    casts: number[];
+  }> = [];
+  for (const cd of input.knowledge.cooldowns) {
+    if (cd.burstDurationMs === undefined || cd.abilityId === undefined) continue;
+    burstAnchors.push({
+      key: cd.key,
+      name: cd.name,
+      abilityId: cd.abilityId,
+      durationMs: cd.burstDurationMs,
+      casts: [],
+    });
+  }
+  if (burstAnchors.length > 0) {
+    const byKey = new Map(burstAnchors.map((a) => [a.key, a]));
+    // Anchors come from the full sampled stream (a burst cast is a decision
+    // itself), not from `decisions` — unmapped casts must still anchor.
+    for (const decision of sampled) {
+      const anchor = byKey.get(decision.actualKey);
+      if (anchor !== undefined) anchor.casts.push(decision.time);
+    }
+    for (const record of decisions) {
+      record.inBurst = burstAnchors.some((a) =>
+        a.casts.some(
+          (t) => record.time >= t && record.time <= t + a.durationMs,
+        ),
+      );
+    }
   }
 
   return {
     decisions,
     breakdown,
     skippedUnmappedCasts,
+    ...(burstAnchors.length > 0
+      ? {
+          burstWindows: burstAnchors.map((a) => ({
+            key: a.key,
+            name: a.name,
+            abilityId: a.abilityId,
+            durationMs: a.durationMs,
+            casts: a.casts,
+          })),
+        }
+      : {}),
     scenario: aoeVotes > stVotes ? 'aoe' : 'st',
     knowledge: {
       specName: input.knowledge.specName,

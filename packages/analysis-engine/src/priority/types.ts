@@ -47,6 +47,24 @@ export interface ObservedDecision {
   state: DecisionState;
 }
 
+/**
+ * One cast-anchored burst window definition. The window itself is
+ * `[castTime, castTime + durationMs]` — anchored to cast timestamps, never
+ * to aura state (WCL's Buffs channel does not return burst-aura events,
+ * probe-verified 2026-09). Knowledge declares which cooldowns open a burst
+ * window via `CooldownKnowledge.burstDurationMs`.
+ */
+export interface BurstWindow {
+  /** Cooldown key (knowledge key, e.g. `arcane_surge`). */
+  key: string;
+  name: string;
+  abilityId?: number | undefined;
+  /** Window length in ms. */
+  durationMs: number;
+  /** Fight-absolute cast timestamps that opened windows. */
+  casts: number[];
+}
+
 /** One evaluated decision. */
 export interface DecisionRecord {
   time: number;
@@ -55,6 +73,8 @@ export interface DecisionRecord {
   /** Action the priority list required, when determinable. */
   expectedKey?: string | undefined;
   expectedRuleId?: string | undefined;
+  /** Spell id of `expectedKey` (from knowledge), for display-name lookup. */
+  expectedAbilityId?: number | undefined;
   /** Rule that legitimately explains the actual cast (later priority). */
   acceptableRuleId?: string | undefined;
   verdict: Verdict;
@@ -64,6 +84,11 @@ export interface DecisionRecord {
   reasons: string[];
   /** 0-based rule index of `expectedKey` inside `knowledge.priority`. */
   expectedRuleIndex?: number | undefined;
+  /**
+   * True when this decision fell inside a burst window (cast-anchored, see
+   * `BurstWindow`). Bucketing only — it never feeds a verdict.
+   */
+  inBurst?: boolean | undefined;
 }
 
 export interface PriorityEvaluationResult {
@@ -72,6 +97,12 @@ export interface PriorityEvaluationResult {
   breakdown: Record<Verdict, number>;
   /** Number of rule evaluations skipped because the action was unmapped. */
   skippedUnmappedCasts: number;
+  /**
+   * Cast-anchored burst windows (knowledge cooldowns that declare
+   * `burstDurationMs`). Empty/absent when the spec declares no burst
+   * anchors or none of them was ever cast.
+   */
+  burstWindows?: BurstWindow[] | undefined;
   /**
    * Scene the fight was evaluated in: the majority scenario across sampled
    * decisions whose target count was observable. Falls back to `'st'` when no

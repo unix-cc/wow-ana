@@ -50,8 +50,10 @@ import type { WclCache } from '@wcl/storage';
 import {
   buildCombatFactsView,
   buildRotationDigest,
+  type BurstPhaseDigest,
   type CombatFactsView,
   type RotationDigest,
+  type RuleAdherenceDigest,
 } from './analysis-views.js';
 import {
   buildReferenceComparison,
@@ -59,6 +61,7 @@ import {
   type ComparisonSide,
   type ComparisonTarget,
   type ReferenceComparison,
+  type RuleComparisonRule,
   type VerdictSide,
 } from './reference-compare.js';
 
@@ -650,10 +653,20 @@ export class AppService {
 
     const own = await this.analyzeFight(reportCode, { fightId, playerId });
     const ownPlayerName = own.summary?.name ?? `#${playerId}`;
-    const ownFight = (await this.client.getFights(reportCode)).find(
-      (f) => f.id === fightId,
-    );
-    const ownDurationMs = fightDurationMs(ownFight);
+    const [report, ownFight, players] = await Promise.all([
+      this.client.getReport(reportCode),
+      this.client.getFights(reportCode),
+      this.getPlayers(reportCode, fightId),
+    ]);
+    const ownFightResolved =
+      ownFight.find((f) => f.id === fightId) ?? ownFight[0];
+    const ownPlayer = players.find((p) => p.id === playerId);
+    const ownEpochMs = report.startTime + (ownFightResolved?.startTime ?? 0);
+    const ownRules =
+      own.rotation?.rules !== undefined && ownPlayer !== undefined
+        ? this.toRuleComparisonRules(own.rotation.rules, ownPlayer, ownEpochMs)
+        : undefined;
+    const ownDurationMs = fightDurationMs(ownFightResolved);
 
     const reference = own.result.reference;
     const entry = reference?.top[rankIndex];
@@ -720,6 +733,8 @@ export class AppService {
 
     let theirsSide: ComparisonSide;
     let theirRotation: VerdictSide | undefined;
+    let theirBurst: BurstPhaseDigest | undefined;
+    let theirRules: RuleComparisonRule[] | undefined;
     try {
       const theirs = await this.analyzeFight(entry.reportCode, {
         fightId: entry.fightId,
@@ -728,6 +743,16 @@ export class AppService {
       const theirFight = (await this.client.getFights(entry.reportCode)).find(
         (f) => f.id === entry.fightId,
       );
+      if (theirFight !== undefined && ownPlayer !== undefined) {
+        const theirReport = await this.client.getReport(entry.reportCode);
+        if (theirs.rotation?.rules !== undefined) {
+          theirRules = this.toRuleComparisonRules(
+            theirs.rotation.rules,
+            ownPlayer,
+            theirReport.startTime + theirFight.startTime,
+          );
+        }
+      }
       theirsSide = toComparisonSide(
         entry.name,
         fightDurationMs(theirFight) ?? entry.durationMs,
@@ -735,6 +760,7 @@ export class AppService {
         await this.abilityNamesOf(entry.reportCode),
       );
       theirRotation = toVerdictSide(theirs.rotation);
+      theirBurst = theirs.rotation?.burst;
     } catch (error) {
       return unavailableComparison(
         'no-data',
@@ -744,6 +770,7 @@ export class AppService {
     }
 
     const myRotation = toVerdictSide(own.rotation);
+    const myBurst = own.rotation?.burst;
 
     return buildReferenceComparison({
       mine,
@@ -752,6 +779,12 @@ export class AppService {
       ...(mineKeyLevel !== undefined ? { mineKeyLevel } : {}),
       ...(myRotation !== undefined ? { rotationMine: myRotation } : {}),
       ...(theirRotation !== undefined ? { rotationTheirs: theirRotation } : {}),
+      ...(myBurst !== undefined && theirBurst !== undefined
+        ? { burstMine: myBurst, burstTheirs: theirBurst }
+        : {}),
+      ...(ownRules !== undefined && theirRules !== undefined
+        ? { rulesMine: ownRules, rulesTheirs: theirRules }
+        : {}),
     });
   }
 
@@ -766,6 +799,38 @@ export class AppService {
     } catch {
       return new Map<number, string>();
     }
+  }
+
+  /**
+   * Lift a rotation digest's per-rule adherence into comparison rules with a
+   * display label (the knowledge ability name, e.g. 奥术弹幕). The label is
+   * resolved from knowledge — WCL events carry no ability names.
+   */
+  private toRuleComparisonRules(
+    digest: RuleAdherenceDigest,
+    player: Player,
+    fightEpochMs: number,
+  ): RuleComparisonRule[] {
+    const knowledge = this.knowledgeRegistry.resolve(player, fightEpochMs);
+    const nameByKey = new Map(
+      (knowledge?.abilities ?? []).map((a) => [a.key, a.name]),
+    );
+    return digest.rules.map((r) => {
+      const out: RuleComparisonRule = {
+        ruleId: r.ruleId,
+        label: nameByKey.get(r.actionKey) ?? r.actionKey,
+        actionKey: r.actionKey,
+        decisions: r.decisions,
+        obeyed: r.obeyed,
+        correct: r.correct,
+        suboptimal: r.suboptimal,
+        mistake: r.mistake,
+        unknown: r.unknown,
+      };
+      if (r.actionAbilityId !== undefined) out.actionAbilityId = r.actionAbilityId;
+      if (r.confidence !== undefined) out.confidence = r.confidence;
+      return out;
+    });
   }
 
   /**

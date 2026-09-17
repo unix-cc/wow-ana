@@ -194,6 +194,207 @@ describe('buildReferenceComparison', () => {
     const dps = comparison.rows.find((row) => row.key === 'dps');
     expect(dps?.deltaPct).toBeUndefined();
   });
+
+  it('splits burst vs filler phases when both sides declare burst anchors', () => {
+    const burst = (overrides = {}) => ({
+      anchors: [
+        { key: 'arcane_surge', name: '涌动 (Arcane Surge)', castCount: 3, durationMs: 6_000 },
+      ],
+      inBurstDecisions: 21,
+      fillerDecisions: 300,
+      totalBurstMs: 18_000,
+      inBurstCorrectRate: 85.7,
+      fillerCorrectRate: 90.2,
+      ...overrides,
+    });
+
+    const comparison = buildReferenceComparison({
+      mine: side(),
+      theirs: side(),
+      target,
+      burstMine: burst(),
+      burstTheirs: burst({ inBurstCorrectRate: 97.5, inBurstDecisions: 24 }),
+    });
+
+    expect(comparison.phase).toBeDefined();
+    expect(comparison.phase?.comparable).toBe(true);
+    expect(comparison.phase?.mine.perWindowDecisions).toBe(7); // 21/3
+    expect(comparison.phase?.mine.inBurstCorrectRate).toBe(85.7);
+    expect(comparison.phase?.theirs.inBurstCorrectRate).toBe(97.5);
+    expect(comparison.phase?.theirs.perWindowDecisions).toBe(8); // 24/3
+    expect(comparison.phase?.mine.anchors[0]?.castCount).toBe(3);
+  });
+
+  it('marks the phase comparison non-comparable when one side never cast a burst', () => {
+    const comparison = buildReferenceComparison({
+      mine: side(),
+      theirs: side(),
+      target,
+      burstMine: {
+        anchors: [
+          { key: 'avatar', name: '天神下凡 (Avatar)', castCount: 4, durationMs: 20_000 },
+        ],
+        inBurstDecisions: 60,
+        fillerDecisions: 200,
+        totalBurstMs: 80_000,
+      },
+      burstTheirs: {
+        anchors: [
+          { key: 'avatar', name: '天神下凡 (Avatar)', castCount: 0, durationMs: 20_000 },
+        ],
+        inBurstDecisions: 0,
+        fillerDecisions: 250,
+        totalBurstMs: 0,
+      },
+    });
+
+    // Zero-cast side may simply not have the talent — honest non-comparison,
+    // not a false accusation.
+    expect(comparison.phase?.comparable).toBe(false);
+    expect(comparison.phase?.theirs.perWindowDecisions).toBeUndefined();
+  });
+
+  it('omits the phase block when either digest is missing', () => {
+    const burst = {
+      anchors: [{ key: 'arcane_surge', name: '涌动', castCount: 2, durationMs: 6_000 }],
+      inBurstDecisions: 14,
+      fillerDecisions: 200,
+      totalBurstMs: 12_000,
+    };
+    const comparison = buildReferenceComparison({
+      mine: side(),
+      theirs: side(),
+      target,
+      burstMine: burst,
+      // burstTheirs absent — e.g. the reference spec declares no anchors
+    });
+    expect(comparison.phase).toBeUndefined();
+  });
+
+  it('aligns the two streams on the same condition buckets (per-rule obedience)', () => {
+    const mineRules = [
+      {
+        ruleId: 'arcane.barrage_salvo25',
+        label: '弹幕 (Arcane Barrage)',
+        actionKey: 'arcane_barrage',
+        decisions: 10,
+        obeyed: 5,
+        correct: 5,
+        suboptimal: 3,
+        mistake: 2,
+        unknown: 0,
+        confidence: 0.8,
+      },
+      {
+        ruleId: 'arcane.soul_barrage',
+        label: '弹幕 (Arcane Barrage)',
+        actionKey: 'arcane_barrage',
+        decisions: 4,
+        obeyed: 4,
+        correct: 4,
+        suboptimal: 0,
+        mistake: 0,
+        unknown: 0,
+        confidence: 0.8,
+      },
+    ];
+    const theirsRules = [
+      {
+        ruleId: 'arcane.barrage_salvo25',
+        label: '弹幕 (Arcane Barrage)',
+        actionKey: 'arcane_barrage',
+        decisions: 20,
+        obeyed: 19,
+        correct: 19,
+        suboptimal: 1,
+        mistake: 0,
+        unknown: 0,
+        confidence: 0.8,
+      },
+      {
+        ruleId: 'arcane.soul_barrage',
+        label: '弹幕 (Arcane Barrage)',
+        actionKey: 'arcane_barrage',
+        decisions: 6,
+        obeyed: 6,
+        correct: 6,
+        suboptimal: 0,
+        mistake: 0,
+        unknown: 0,
+        confidence: 0.8,
+      },
+    ];
+
+    const comparison = buildReferenceComparison({
+      mine: side(),
+      theirs: side(),
+      target,
+      rulesMine: mineRules,
+      rulesTheirs: theirsRules,
+    });
+
+    expect(comparison.rules).toBeDefined();
+    const salvo = comparison.rules?.rules.find(
+      (r) => r.ruleId === 'arcane.barrage_salvo25',
+    );
+    expect(salvo?.mine.adherenceRate).toBe(50); // 5/10
+    expect(salvo?.theirs.adherenceRate).toBe(95); // 19/20
+    expect(salvo?.deltaPp).toBe(-45);
+    expect(salvo?.comparable).toBe(true);
+    expect(salvo?.label).toBe('弹幕 (Arcane Barrage)');
+    // Biggest gap first.
+    expect(comparison.rules?.rules[0]?.ruleId).toBe('arcane.barrage_salvo25');
+  });
+
+  it('gates rule rows below the sample minimum from deltas', () => {
+    const comparison = buildReferenceComparison({
+      mine: side(),
+      theirs: side(),
+      target,
+      rulesMine: [
+        {
+          ruleId: 'r1',
+          label: 'A',
+          actionKey: 'a',
+          decisions: 2,
+          obeyed: 1,
+          correct: 1,
+          suboptimal: 0,
+          mistake: 1,
+          unknown: 0,
+          confidence: 0.9,
+        },
+      ],
+      rulesTheirs: [
+        {
+          ruleId: 'r1',
+          label: 'A',
+          actionKey: 'a',
+          decisions: 5,
+          obeyed: 5,
+          correct: 5,
+          suboptimal: 0,
+          mistake: 0,
+          unknown: 0,
+          confidence: 0.9,
+        },
+      ],
+    });
+    const row = comparison.rules?.rules[0];
+    expect(row?.comparable).toBe(false);
+    expect(row?.deltaPp).toBeUndefined();
+    // Rates still shown (they are facts), only the delta is withheld.
+    expect(row?.mine.adherenceRate).toBe(50);
+  });
+
+  it('omits the rules block when either side has no adherence digest', () => {
+    const comparison = buildReferenceComparison({
+      mine: side(),
+      theirs: side(),
+      target,
+    });
+    expect(comparison.rules).toBeUndefined();
+  });
 });
 
 describe('unavailableComparison', () => {

@@ -15,7 +15,10 @@ import type { ComparisonView } from './compare.js';
 export interface StoredMessage extends ChatMessage {
   artifact?: AnalysisArtifact | undefined;
   activity?: ActivityStep[] | undefined;
+  /** Single-target comparison (Phase AF); superseded by `comparisons`. */
   comparison?: ComparisonView | undefined;
+  /** Head-to-head comparisons of one turn (1-2 targets, Phase AI). */
+  comparisons?: ComparisonView[] | undefined;
 }
 
 /**

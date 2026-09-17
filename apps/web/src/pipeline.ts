@@ -62,9 +62,11 @@ export type TurnReply =
   /**
    * Head-to-head comparison against the ranked run (Phase AF). Downstream
    * because it needs the session history (to find the run being compared from)
-   * rather than anything the pipeline state holds.
+   * rather than anything the pipeline state holds. `rankIndexes` are the
+   * chosen pool positions (0-based); the UI button or "第 N 名" wording
+   * selects them, defaulting to the top run.
    */
-  | { kind: 'compare' }
+  | { kind: 'compare'; rankIndexes: number[] }
   /** No deterministic action; the LLM should answer from conversation memory. */
   | { kind: 'followup' }
   | { kind: 'error'; text: string };
@@ -123,6 +125,45 @@ const COMPARE_INTENTS = [
 export function isCompareIntent(text: string): boolean {
   const lower = text.toLowerCase();
   return COMPARE_INTENTS.some((phrase) => lower.includes(phrase));
+}
+
+/**
+ * Parse pool positions out of a compare ask. Accepts "第 2 名", "第2名",
+ * "#2", and a bare number after 对比/和/跟. Returns 0-based indexes, capped
+ * at `MAX_COMPARE_TARGETS`, deduplicated, in rank order. Empty means "the
+ * top run" (index 0).
+ */
+export const MAX_COMPARE_TARGETS = 2;
+
+export function parseCompareIndexes(text: string): number[] {
+  const indexes: number[] = [];
+  const push = (n: number): void => {
+    if (!Number.isInteger(n) || n < 1) return;
+    const idx = n - 1;
+    if (!indexes.includes(idx)) indexes.push(idx);
+  };
+  // 第 N 名 / 第N名
+  const rankMatch = text.match(/第\s*(\d+)\s*名/g);
+  if (rankMatch) {
+    for (const m of rankMatch) {
+      const n = Number(m.replace(/[第\s名]/g, ''));
+      push(n);
+    }
+  }
+  // #N
+  const hashMatch = text.match(/#\s*(\d+)/g);
+  if (hashMatch) {
+    for (const m of hashMatch) {
+      push(Number(m.replace(/[#\s]/g, '')));
+    }
+  }
+  // Bare numbers right after a compare verb (对比 2 / 和 3 / 跟 4)
+  const bareMatch = text.match(/(?:对比|和|跟)\s*(\d+)/);
+  if (bareMatch && indexes.length === 0) {
+    push(Number(bareMatch[1]));
+  }
+  indexes.sort((a, b) => a - b);
+  return indexes.slice(0, MAX_COMPARE_TARGETS);
 }
 
 const HELP_TEXT =
@@ -298,7 +339,10 @@ export async function processTurn(
     // on an explicit ask — and only in `ready`, where the session already
     // carries an analysed run to compare from.
     if (isCompareIntent(message)) {
-      return { session, reply: { kind: 'compare' } };
+      return {
+        session,
+        reply: { kind: 'compare', rankIndexes: parseCompareIndexes(message) },
+      };
     }
     // General follow-up: the LLM answers from the conversation history.
     return { session, reply: { kind: 'followup' } };

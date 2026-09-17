@@ -193,6 +193,42 @@ export interface ComparisonView {
         correctRateTheirs?: number | undefined;
       }
     | undefined;
+  /** Burst-vs-filler phase split (cast-anchored bucketing). */
+  phase?:
+    | {
+        comparable: boolean;
+        anchorsMine: Array<{ name: string; castCount: number }>;
+        anchorsTheirs: Array<{ name: string; castCount: number }>;
+        inBurstDecisionsMine: number;
+        inBurstDecisionsTheirs: number;
+        fillerDecisionsMine: number;
+        fillerDecisionsTheirs: number;
+        perWindowDecisionsMine?: number | undefined;
+        perWindowDecisionsTheirs?: number | undefined;
+        inBurstCorrectRateMine?: number | undefined;
+        inBurstCorrectRateTheirs?: number | undefined;
+        fillerCorrectRateMine?: number | undefined;
+        fillerCorrectRateTheirs?: number | undefined;
+      }
+    | undefined;
+  /** Per-rule obedience: condition held → how often the demanded action. */
+  rules?:
+    | {
+        rules: Array<{
+          ruleId: string;
+          label: string;
+          mineDecisions: number;
+          mineAdherenceRate?: number | undefined;
+          theirsDecisions: number;
+          theirsAdherenceRate?: number | undefined;
+          deltaPp?: number | undefined;
+          mineMistakes: number;
+          theirsMistakes: number;
+          confidence?: number | undefined;
+          comparable: boolean;
+        }>;
+      }
+    | undefined;
   findingsOnlyMine: string[];
   findingsShared: string[];
 }

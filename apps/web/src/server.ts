@@ -24,6 +24,10 @@ import { SessionStore, toLlmMessages, type ChatSession } from './session.js';
 import { SYSTEM_PROMPT } from './prompt.js';
 import { buildAnalysisArtifact, type ActivityStep, type AnalysisArtifact } from './artifact.js';
 import { buildComparisonView, type ComparisonView } from './compare.js';
+import {
+  buildComparisonUserMessage,
+  buildMultiComparisonUserMessage,
+} from './compare-prompt.js';
 
 const PUBLIC_DIR = fileURLToPath(new URL('../public', import.meta.url));
 // React front end (Vite build output). Preferred when present; the legacy
@@ -543,91 +547,6 @@ function buildAnalysisUserMessage(
  * different scenarios) are stated so the model cannot turn the table into a
  * population percentile or a "you are X% worse" verdict.
  */
-function buildComparisonUserMessage(
-  comparison: ComparisonView,
-  originalMessage: string,
-): string {
-  const lines: string[] = [
-    `请做「与同副本同专精榜首逐场对标」。用户原话：「${originalMessage}」`,
-    '',
-    `【对标对象】${
-      comparison.target
-        ? `第 ${comparison.target.rank} 名 ${comparison.target.name}` +
-          `${comparison.target.keyLevel !== undefined ? `（+${comparison.target.keyLevel}）` : ''}` +
-          ` ${Math.round(comparison.target.amount)} DPS` +
-          `${comparison.target.runUrl !== undefined ? ` — ${comparison.target.runUrl}` : ''}`
-        : '（未取到）'
-    }`,
-    `【我】${comparison.mine.playerName}` +
-      `${comparison.mine.keyLevel !== undefined ? `（+${comparison.mine.keyLevel}）` : ''}`,
-    `【引擎给出的对照前提】${comparison.notice}`,
-    '',
-  ];
-
-  if (comparison.status !== 'ok') {
-    lines.push(
-      '本次对标未能完成（原因见上）。请如实说明缺什么、玩家可以点哪里自己看，不要编造任何对照数字。',
-    );
-    return lines.join('\n');
-  }
-
-  lines.push('【速率指标对照（已是可比口径，直接引用，不要重算）】');
-  for (const row of comparison.rows) {
-    const unit = row.unit === 'pct' ? '%' : row.unit === 'perMin' ? '/分钟' : '';
-    lines.push(
-      `- ${row.label}：我 ${row.mine ?? '—'}${unit} / 榜首 ${row.theirs ?? '—'}${unit}` +
-        `${row.deltaPct !== undefined ? `（差 ${row.deltaPct > 0 ? '+' : ''}${row.deltaPct}%）` : ''}` +
-        `；越${row.better === 'higher' ? '高' : row.better === 'lower' ? '低' : '—'}越好` +
-        `${row.note !== undefined ? `｜注意：${row.note}` : ''}`,
-    );
-  }
-
-  if (comparison.abilities.length > 0) {
-    lines.push('', '【技能使用频率对照（次/分钟）】');
-    for (const a of comparison.abilities) {
-      lines.push(
-        `- ${a.name}：我 ${a.minePerMin} / 榜首 ${a.theirsPerMin}` +
-          `${a.deltaPct !== undefined ? `（${a.deltaPct > 0 ? '+' : ''}${a.deltaPct}%）` : ''}`,
-      );
-    }
-  }
-
-  if (comparison.rotation !== undefined) {
-    const r = comparison.rotation;
-    lines.push('', '【逐决策判定档分布（引擎按 Condition→Action 逐次判定）】');
-    if (!r.comparable) {
-      lines.push(
-        `- 两边场景不同（我 ${r.scenarioMine} / 榜首 ${r.scenarioTheirs}），` +
-          '判定档**不可直接横比**：不同的场景会期望不同的动作。必须明确说明这一点，只能做定性参考。',
-      );
-    }
-    lines.push(
-      `- 决策数：我 ${r.decisionCountMine} / 榜首 ${r.decisionCountTheirs}`,
-      `- 分布（我）：${JSON.stringify(r.breakdownMine)}`,
-      `- 分布（榜首）：${JSON.stringify(r.breakdownTheirs)}`,
-      r.correctRateMine !== undefined && r.correctRateTheirs !== undefined
-        ? `- 正确率（剔除 unknown）：我 ${r.correctRateMine}% / 榜首 ${r.correctRateTheirs}%` +
-          (r.comparable ? '' : '（场景不同，仅供定性参考）')
-        : '- （正确率无法计算）',
-    );
-  }
-
-  lines.push(
-    '',
-    '【问题（finding）差异】',
-    comparison.findingsOnlyMine.length === 0
-      ? '- 引擎规则命中的问题里，没有「只有我有、榜首没有」的条目（说明这些规则对两边都会触发，差异不在是否触发，而在频率与占比）。'
-      : `- 只有我有（=差异点）：${comparison.findingsOnlyMine.join('；')}`,
-    comparison.findingsShared.length > 0
-      ? `- 双方都有（不构成差异）：${comparison.findingsShared.join('；')}`
-      : '',
-    '',
-    '请用中文回答，结构：① 一句话结论（我最该改的一件事）→ ② 差距最明显的 2-3 项，每项引用上面的具体数字 → ③ 建议怎么练。',
-    '铁律：不得把差值说成「超过/落后 X% 玩家」或「同层分位」；层数不同时不得把 DPS 差额整体归因为手法；场景不同时不得直接横比判定档分布。不要编造上面没有的数字。',
-  );
-
-  return lines.filter((line) => line !== '').join('\n');
-}
 
 /** Lift the fight context (reportCode/fight/players) out of a session state. */
 function fightContextOf(

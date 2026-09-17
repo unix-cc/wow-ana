@@ -255,7 +255,7 @@ describe('AppService Phase H insights', () => {
       playerId: 42,
     });
     expect(knowledge.specName).toBe('Beast Mastery');
-    expect(knowledge.knowledgeVersion).toBe('1.0.0');
+    expect(knowledge.knowledgeVersion).toBe('1.1.0');
     expect(knowledge.abilities.length).toBeGreaterThan(0);
 
     // An unsupported spec must degrade with a clear error, not a verdict.
@@ -334,8 +334,8 @@ describe('AppService Phase I dual versions + analysis cache', () => {
       playerId: 42,
     });
     expect(result.versions?.analyzerVersion).toBeDefined();
-    // Beast Mastery knowledge v1.0.0 is live at the dated fight.
-    expect(result.versions?.knowledgeVersion).toBe('1.0.0');
+    // Beast Mastery knowledge v1.1.0 is live at the dated fight.
+    expect(result.versions?.knowledgeVersion).toBe('1.1.0');
   });
 
   it('gives the Mythic+ baseline openable links and its real level range', async () => {
@@ -455,13 +455,13 @@ describe('AppService Phase I dual versions + analysis cache', () => {
       playerId: 42,
     });
     // 50_000 offset + reportBase lands exactly at knowledgeLiveDate.
-    expect(result.versions?.knowledgeVersion).toBe('1.0.0');
+    expect(result.versions?.knowledgeVersion).toBe('1.1.0');
 
     const specKnowledge = await service.getSpecKnowledge('ABC123', {
       fightId: 8,
       playerId: 42,
     });
-    expect(specKnowledge.knowledgeVersion).toBe('1.0.0');
+    expect(specKnowledge.knowledgeVersion).toBe('1.1.0');
   });
 
   it('omits knowledgeVersion for specs without live knowledge', async () => {
@@ -518,7 +518,7 @@ describe('AppService Phase I dual versions + analysis cache', () => {
     expect(second.result).toEqual(first.result);
     // The digest is a local replay over the events, still produced on a hit.
     expect(second.rotation).toBeDefined();
-    expect(second.rotation?.knowledge.knowledgeVersion).toBe('1.0.0');
+    expect(second.rotation?.knowledge.knowledgeVersion).toBe('1.1.0');
   });
 
   it('keeps the legacy always-compute behaviour without a cache', async () => {

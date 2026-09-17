@@ -37,7 +37,7 @@ export const BLOOD_DEATH_KNIGHT_KNOWLEDGE: SpecKnowledge = {
   specName: 'Blood',
   className: 'Death Knight',
   patch: 'current',
-  knowledgeVersion: '1.1.0',
+  knowledgeVersion: '1.2.0',
   effectiveFrom: '2026-01-01',
 
   abilities: [
@@ -118,6 +118,9 @@ export const BLOOD_DEATH_KNIGHT_KNOWLEDGE: SpecKnowledge = {
       name: '吸血鬼之血 (Vampiric Blood)',
       cooldownMs: 120_000,
       kind: 'defensive',
+      // 10s buff window；防御 CD 按需开启（Phase W），burst 窗口仅供
+      // 阶段对比分桶，永不产出定责 verdict。
+      burstDurationMs: 10_000,
       source: LOG_VERIFIED,
       confidence: 0.9,
     },
@@ -127,6 +130,8 @@ export const BLOOD_DEATH_KNIGHT_KNOWLEDGE: SpecKnowledge = {
       name: '符文武器幻舞 (Dancing Rune Weapon)',
       cooldownMs: 240_000,
       kind: 'defensive',
+      // 12s buff window；防御 CD 按需开启（Phase W），仅供分桶不作定责。
+      burstDurationMs: 12_000,
       source: LOG_VERIFIED,
       confidence: 0.9,
     },

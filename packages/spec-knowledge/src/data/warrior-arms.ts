@@ -48,7 +48,7 @@ export const ARMS_WARRIOR_KNOWLEDGE: SpecKnowledge = {
   specName: 'Arms',
   className: 'Warrior',
   patch: 'current',
-  knowledgeVersion: '1.1.0',
+  knowledgeVersion: '1.2.0',
   effectiveFrom: '2026-01-01',
 
   abilities: [
@@ -195,6 +195,9 @@ export const ARMS_WARRIOR_KNOWLEDGE: SpecKnowledge = {
       name: '天神下凡 (Avatar)',
       cooldownMs: 90_000,
       kind: 'offensive',
+      // 20s buff window (icy-veins/wowhead 12.1 spell page); cast-anchored
+      // burst bucketing only, never a verdict input.
+      burstDurationMs: 20_000,
       source: ICY_VEINS,
       confidence: 0.7,
     },
@@ -204,6 +207,8 @@ export const ARMS_WARRIOR_KNOWLEDGE: SpecKnowledge = {
       name: '剑刃风暴 (Bladestorm)',
       cooldownMs: 90_000,
       kind: 'offensive',
+      // ~6s channel window (icy-veins 12.1); burst bucketing only.
+      burstDurationMs: 6_000,
       source: ICY_VEINS,
       confidence: 0.6,
     },
@@ -213,6 +218,8 @@ export const ARMS_WARRIOR_KNOWLEDGE: SpecKnowledge = {
       name: '蹂躏者 (Ravager)',
       cooldownMs: 90_000,
       kind: 'offensive',
+      // ~10s channel window (icy-veins 12.1); burst bucketing only.
+      burstDurationMs: 10_000,
       source: ICY_VEINS,
       confidence: 0.6,
     },

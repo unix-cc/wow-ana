@@ -63,7 +63,9 @@ const SURGE_CD: KnowledgeSource = {
   reference:
     'Arcane Surge cooldownMs 90_000：wowhead 328151（10.0 重做为 90s）与 ' +
     'icy-veins 12.1 奥法指南（2026-08，无 CD 改动记录）。confidence 0.7，' +
-    '待游戏内 tooltip 复核；减 CD 天赋未建模。',
+    '待游戏内 tooltip 复核；减 CD 天赋未建模。burstDurationMs 6_000：' +
+    'icy-veins 12.1「Arcane Surge 开启爆发窗口」，buff 时长约 6s（2026-09 探针' +
+    '实测 cast 后 8s 内约 7 GCD）；时长仅供窗口分桶，不作判定。',
 };
 
 /**
@@ -85,7 +87,7 @@ export const ARCANE_MAGE_KNOWLEDGE: SpecKnowledge = {
   specName: 'Arcane',
   className: 'Mage',
   patch: '12.1',
-  knowledgeVersion: '1.4.0',
+  knowledgeVersion: '1.5.0',
   effectiveFrom: '2026-01-01',
 
   abilities: [
@@ -207,6 +209,7 @@ export const ARCANE_MAGE_KNOWLEDGE: SpecKnowledge = {
       name: '涌动 (Arcane Surge)',
       cooldownMs: 90_000,
       kind: 'offensive',
+      burstDurationMs: 6_000,
       source: SURGE_CD,
       confidence: 0.7,
     },

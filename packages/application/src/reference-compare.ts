@@ -1,4 +1,5 @@
 import type { Finding } from '@wcl/domain';
+import type { BurstPhaseDigest } from './analysis-views.js';
 
 /**
  * Head-to-head comparison against a **ranked run of the same dungeon & spec**
@@ -102,6 +103,84 @@ export interface RotationComparison {
   correctRateTheirs?: number | undefined;
 }
 
+/**
+ * One side of the burst-vs-filler phase split (cast-anchored bucketing).
+ * Bucketing only: the `inBurst` flag never feeds a verdict, it only says
+ * whether a decision happened inside a burst window.
+ */
+export interface PhaseSide {
+  /** Burst anchors declared by knowledge (incl. zero-cast ones), capped. */
+  anchors: Array<{
+    key: string;
+    name: string;
+    castCount: number;
+    durationMs: number;
+  }>;
+  inBurstDecisions: number;
+  fillerDecisions: number;
+  totalBurstMs: number;
+  inBurstCorrectRate?: number | undefined;
+  fillerCorrectRate?: number | undefined;
+  /** Mean decisions per opened window (in-burst decisions / opened windows). */
+  perWindowDecisions?: number | undefined;
+}
+
+export interface PhaseComparison {
+  /**
+   * True when both sides opened at least one burst window. A side with zero
+   * cast windows may simply not have the talent — comparing a spec shape
+   * against nothing would be a false accusation, so the UI says so.
+   */
+  comparable: boolean;
+  mine: PhaseSide;
+  theirs: PhaseSide;
+}
+
+/** Minimum per-side decisions before a rule row gets a delta. */
+export const MIN_RULE_SAMPLE = 3;
+
+/**
+ * One Condition→Action rule's obedience on one side of the comparison.
+ * `label` is resolved by the caller (knowledge ability name); everything
+ * else is engine numbers.
+ */
+export interface RuleComparisonRule {
+  ruleId: string;
+  /** Display label — demanded ability name (knowledge name). */
+  label: string;
+  actionKey: string;
+  actionAbilityId?: number | undefined;
+  decisions: number;
+  obeyed: number;
+  correct: number;
+  suboptimal: number;
+  mistake: number;
+  unknown: number;
+  confidence?: number | undefined;
+}
+
+export interface RuleComparisonEntry {
+  ruleId: string;
+  label: string;
+  actionKey: string;
+  actionAbilityId?: number | undefined;
+  mine: { decisions: number; obeyed: number; adherenceRate?: number | undefined };
+  theirs: { decisions: number; obeyed: number; adherenceRate?: number | undefined };
+  /** mine rate − theirs rate, in percentage points. Positive = I obeyed more. */
+  deltaPp?: number | undefined;
+  mineMistakes: number;
+  theirsMistakes: number;
+  confidence?: number | undefined;
+  /** False when either side has fewer than MIN_RULE_SAMPLE decisions. */
+  comparable: boolean;
+}
+
+export interface RuleComparison {
+  /** Sorted by |delta| (biggest gap first), capped. */
+  rules: RuleComparisonEntry[];
+  capped: boolean;
+}
+
 /** Share of decided (non-unknown) decisions that came back `correct`. */
 function correctRate(side: VerdictSide): number | undefined {
   const correct = side.breakdown.correct ?? 0;
@@ -129,6 +208,19 @@ export interface ReferenceComparison {
    * classifies every decision rather than only the ones that became findings.
    */
   rotation?: RotationComparison | undefined;
+  /**
+   * Burst-phase vs filler split on both sides (cast-anchored bucketing).
+   * Answers "is the gap in burst windows or in the filler phase" without
+   * mixing the two very different playstyles.
+   */
+  phase?: PhaseComparison | undefined;
+  /**
+   * Per-rule obedience: "when the condition held, the top player obeyed X%,
+   * you obeyed Y%" — the sharpest hand-level comparison the engine can
+   * produce, because it aligns the two streams on the same condition buckets
+   * instead of comparing aggregate rates.
+   */
+  rules?: RuleComparison | undefined;
   /** Finding titles only the player hit — the actionable delta. */
   findingsOnlyMine: string[];
   /** Finding titles the reference run hit too — not a differentiator. */
@@ -192,6 +284,12 @@ export function buildReferenceComparison(input: {
   /** Verdict digests, when both runs' specs have live knowledge. */
   rotationMine?: VerdictSide | undefined;
   rotationTheirs?: VerdictSide | undefined;
+  /** Burst-phase digests, when both runs' specs declare burst anchors. */
+  burstMine?: BurstPhaseDigest | undefined;
+  burstTheirs?: BurstPhaseDigest | undefined;
+  /** Per-rule adherence, when both runs' specs have live knowledge. */
+  rulesMine?: RuleComparisonRule[] | undefined;
+  rulesTheirs?: RuleComparisonRule[] | undefined;
 }): ReferenceComparison {
   const { mine, theirs, target } = input;
   const rows: ComparisonRow[] = [];
@@ -313,6 +411,16 @@ export function buildReferenceComparison(input: {
       ? buildRotationComparison(input.rotationMine, input.rotationTheirs)
       : undefined;
 
+  const phase =
+    input.burstMine !== undefined && input.burstTheirs !== undefined
+      ? buildPhaseComparison(input.burstMine, input.burstTheirs)
+      : undefined;
+
+  const rules =
+    input.rulesMine !== undefined && input.rulesTheirs !== undefined
+      ? buildRuleComparison(input.rulesMine, input.rulesTheirs)
+      : undefined;
+
   return {
     status: 'ok',
     notice: notices.join(''),
@@ -325,6 +433,8 @@ export function buildReferenceComparison(input: {
     rows,
     abilities: abilities.slice(0, MAX_COMPARE_ABILITIES),
     ...(rotation !== undefined ? { rotation } : {}),
+    ...(phase !== undefined ? { phase } : {}),
+    ...(rules !== undefined ? { rules } : {}),
     findingsOnlyMine,
     findingsShared,
   };
@@ -344,6 +454,96 @@ function buildRotationComparison(
   if (mineRate !== undefined) out.correctRateMine = mineRate;
   if (theirsRate !== undefined) out.correctRateTheirs = theirsRate;
   return out;
+}
+
+function buildPhaseComparison(
+  mine: BurstPhaseDigest,
+  theirs: BurstPhaseDigest,
+): PhaseComparison {
+  const toSide = (digest: BurstPhaseDigest): PhaseSide => {
+    const opened = digest.anchors.reduce((sum, a) => sum + a.castCount, 0);
+    const side: PhaseSide = {
+      anchors: digest.anchors,
+      inBurstDecisions: digest.inBurstDecisions,
+      fillerDecisions: digest.fillerDecisions,
+      totalBurstMs: digest.totalBurstMs,
+    };
+    if (digest.inBurstCorrectRate !== undefined) {
+      side.inBurstCorrectRate = digest.inBurstCorrectRate;
+    }
+    if (digest.fillerCorrectRate !== undefined) {
+      side.fillerCorrectRate = digest.fillerCorrectRate;
+    }
+    if (opened > 0 && digest.inBurstDecisions > 0) {
+      side.perWindowDecisions = round(digest.inBurstDecisions / opened, 1);
+    }
+    return side;
+  };
+  const mineOpened = mine.anchors.some((a) => a.castCount > 0);
+  const theirsOpened = theirs.anchors.some((a) => a.castCount > 0);
+  return {
+    comparable: mineOpened && theirsOpened,
+    mine: toSide(mine),
+    theirs: toSide(theirs),
+  };
+}
+
+function adherenceRate(obeyed: number, decisions: number): number | undefined {
+  if (decisions <= 0) return undefined;
+  return round((obeyed / decisions) * 100, 1);
+}
+
+function buildRuleComparison(
+  mine: RuleComparisonRule[],
+  theirs: RuleComparisonRule[],
+): RuleComparison {
+  const theirsByRule = new Map(theirs.map((r) => [r.ruleId, r]));
+  const ids = new Set<string>();
+  for (const r of mine) ids.add(r.ruleId);
+  for (const r of theirs) ids.add(r.ruleId);
+
+  const rules: RuleComparisonEntry[] = [];
+  for (const ruleId of ids) {
+    const m = mine.find((r) => r.ruleId === ruleId);
+    const t = theirsByRule.get(ruleId);
+    if (m === undefined || t === undefined) continue; // only both-sided rows
+    const mineRate = adherenceRate(m.obeyed, m.decisions);
+    const theirsRate = adherenceRate(t.obeyed, t.decisions);
+    const comparable = m.decisions >= MIN_RULE_SAMPLE && t.decisions >= MIN_RULE_SAMPLE;
+    const entry: RuleComparisonEntry = {
+      ruleId,
+      label: m.label,
+      actionKey: m.actionKey,
+      mine: {
+        decisions: m.decisions,
+        obeyed: m.obeyed,
+        ...(mineRate !== undefined ? { adherenceRate: mineRate } : {}),
+      },
+      theirs: {
+        decisions: t.decisions,
+        obeyed: t.obeyed,
+        ...(theirsRate !== undefined ? { adherenceRate: theirsRate } : {}),
+      },
+      mineMistakes: m.mistake,
+      theirsMistakes: t.mistake,
+      comparable,
+    };
+    if (m.actionAbilityId !== undefined) entry.actionAbilityId = m.actionAbilityId;
+    if (m.confidence !== undefined) entry.confidence = m.confidence;
+    if (comparable && mineRate !== undefined && theirsRate !== undefined) {
+      entry.deltaPp = round(mineRate - theirsRate, 1);
+    }
+    rules.push(entry);
+  }
+
+  // Biggest gap first; ties by the reference side's decision count.
+  rules.sort(
+    (a, b) =>
+      Math.abs(b.deltaPp ?? 0) - Math.abs(a.deltaPp ?? 0) ||
+      b.theirs.decisions - a.theirs.decisions,
+  );
+
+  return { rules, capped: false };
 }
 
 /** Assemble a `ReferenceComparison` that explains why nothing could be built. */

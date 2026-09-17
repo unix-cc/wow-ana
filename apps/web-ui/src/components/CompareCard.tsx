@@ -60,7 +60,7 @@ export function CompareCard({
     );
   }
 
-  const { target, mine, rows, abilities, rotation } = comparison;
+  const { target, mine, rows, abilities, rotation, phase, rules } = comparison;
   const visibleAbilities = expanded ? abilities : abilities.slice(0, INLINE_ABILITIES);
   const hiddenAbilities = abilities.length - visibleAbilities.length;
 
@@ -205,6 +205,171 @@ export function CompareCard({
                 {!rotation.comparable && '（场景不同，仅定性参考）'}
               </div>
             )}
+        </div>
+      )}
+
+      {phase !== undefined && (
+        <div className="compare-phase">
+          <div className="compare-subhead">爆发期 vs 非爆发期手法</div>
+          {!phase.comparable && (
+            <div className="compare-warn">
+              榜首本场没有施放任何爆发技能（可能未点对应天赋），两边爆发期无可横比——
+              这是天赋构型差异，不是手法定责。
+            </div>
+          )}
+          <table className="compare-table">
+            <thead>
+              <tr>
+                <th>爆发阶段指标</th>
+                <th>我</th>
+                <th>榜首</th>
+              </tr>
+            </thead>
+            <tbody>
+              {phase.anchorsMine.length > 0 && (
+                <tr>
+                  <td className="compare-label">爆发技能</td>
+                  <td>
+                    {phase.anchorsMine.map((a) => (
+                      <span key={a.name} className="compare-chip">
+                        {a.name} ×{a.castCount}
+                      </span>
+                    ))}
+                  </td>
+                  <td>
+                    {phase.anchorsTheirs.map((a) => (
+                      <span key={a.name} className="compare-chip">
+                        {a.name} ×{a.castCount}
+                      </span>
+                    ))}
+                  </td>
+                </tr>
+              )}
+              {phase.perWindowDecisionsMine !== undefined &&
+                phase.perWindowDecisionsTheirs !== undefined && (
+                  <tr>
+                    <td className="compare-label">每次爆发窗口的决策数（GCD 密度）</td>
+                    <td>{phase.perWindowDecisionsMine}</td>
+                    <td>{phase.perWindowDecisionsTheirs}</td>
+                  </tr>
+                )}
+              {phase.inBurstCorrectRateMine !== undefined &&
+                phase.inBurstCorrectRateTheirs !== undefined && (
+                  <tr>
+                    <td className="compare-label">爆发期内正确率</td>
+                    <td
+                      className={
+                        phase.inBurstCorrectRateMine >= phase.inBurstCorrectRateTheirs
+                          ? 'compare-gain'
+                          : 'compare-loss'
+                      }
+                    >
+                      {phase.inBurstCorrectRateMine}%
+                    </td>
+                    <td>{phase.inBurstCorrectRateTheirs}%</td>
+                  </tr>
+                )}
+              {phase.fillerCorrectRateMine !== undefined &&
+                phase.fillerCorrectRateTheirs !== undefined && (
+                  <tr>
+                    <td className="compare-label">非爆发期正确率</td>
+                    <td
+                      className={
+                        phase.fillerCorrectRateMine >= phase.fillerCorrectRateTheirs
+                          ? 'compare-gain'
+                          : 'compare-loss'
+                      }
+                    >
+                      {phase.fillerCorrectRateMine}%
+                    </td>
+                    <td>{phase.fillerCorrectRateTheirs}%</td>
+                  </tr>
+                )}
+              <tr>
+                <td className="compare-label">爆发期 / 非爆发期决策数</td>
+                <td>
+                  {phase.inBurstDecisionsMine} / {phase.fillerDecisionsMine}
+                </td>
+                <td>
+                  {phase.inBurstDecisionsTheirs} / {phase.fillerDecisionsTheirs}
+                </td>
+              </tr>
+            </tbody>
+          </table>
+          <ul className="compare-notes">
+            <li>
+              ＊ 爆发窗口按技能施放时刻 + 知识声明的时长切分（WCL 不返回爆发 aura
+              事件，见探针结论）；窗口只用于分桶，不参与定责。
+            </li>
+          </ul>
+        </div>
+      )}
+
+      {rules !== undefined && rules.rules.length > 0 && (
+        <div className="compare-rules">
+          <div className="compare-subhead">规则遵守度（条件出现时，是否打了该打的技能）</div>
+          <table className="compare-table">
+            <thead>
+              <tr>
+                <th>规则（条件 → 动作）</th>
+                <th>我</th>
+                <th>榜首</th>
+                <th>差距</th>
+              </tr>
+            </thead>
+            <tbody>
+              {rules.rules.map((r) => (
+                <tr key={r.ruleId}>
+                  <td className="compare-label">
+                    {r.label}
+                    {r.mineMistakes + r.theirsMistakes > 0 && (
+                      <span className="compare-chip-mistake" title={`失误次数 我 ${r.mineMistakes} / 榜首 ${r.theirsMistakes}`}>
+                        失误 {r.mineMistakes}/{r.theirsMistakes}
+                      </span>
+                    )}
+                    {r.confidence !== undefined && r.confidence < 0.6 && (
+                      <span className="compare-muted" title="低置信度知识，只解释不定责">
+                        低置信
+                      </span>
+                    )}
+                  </td>
+                  <td>
+                    {r.mineAdherenceRate !== undefined
+                      ? `${r.mineAdherenceRate}%`
+                      : '—'}
+                    <span className="compare-muted"> (n={r.mineDecisions})</span>
+                  </td>
+                  <td>
+                    {r.theirsAdherenceRate !== undefined
+                      ? `${r.theirsAdherenceRate}%`
+                      : '—'}
+                    <span className="compare-muted"> (n={r.theirsDecisions})</span>
+                  </td>
+                  <td
+                    className={
+                      r.deltaPp === undefined
+                        ? 'compare-muted'
+                        : r.deltaPp >= 0
+                          ? 'compare-gain'
+                          : 'compare-loss'
+                    }
+                  >
+                    {r.deltaPp !== undefined
+                      ? `${r.deltaPp > 0 ? '+' : ''}${r.deltaPp}pp`
+                      : r.comparable
+                        ? '—'
+                        : '样本少'}
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+          <ul className="compare-notes">
+            <li>
+              ＊ 遵守率 = 该条件出现时实际打出对应技能的比例；任一边样本 &lt; 3
+              次不标差距（样本少）。低置信度规则（&lt; 0.6）只作解释、不作定责。
+            </li>
+          </ul>
         </div>
       )}
 

@@ -26,7 +26,7 @@ describe('ArmsWarriorAnalyzer', () => {
     );
     expect(finding).toBeDefined();
     expect(finding?.confidence).toBe(0.9);
-    expect(result.metrics.knowledgeVersion).toBe('1.1.0');
+    expect(result.metrics.knowledgeVersion).toBe('1.2.0');
   });
 
   it('does not penalize early Colossus Smash casts (Tactician resets)', () => {

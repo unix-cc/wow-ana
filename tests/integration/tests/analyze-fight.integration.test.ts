@@ -88,7 +88,7 @@ describe('analyze-fight end-to-end (AppService + engine + knowledge + cache)', (
 
     expect(outcome.summary?.spec).toBe('Beast Mastery');
     expect(outcome.result.score?.overall).toBeTypeOf('number');
-    expect(outcome.result.versions?.knowledgeVersion).toBe('1.0.0');
+    expect(outcome.result.versions?.knowledgeVersion).toBe('1.1.0');
     const ids = outcome.result.findings.map((finding) => finding.id);
     expect(ids).toEqual(expect.arrayContaining(BM_EXPECTED));
 
@@ -126,10 +126,10 @@ describe('analyze-fight end-to-end (AppService + engine + knowledge + cache)', (
       playerId: ARCANE_FIXTURE.player.id,
     });
 
-    expect(outcome.result.versions?.knowledgeVersion).toBe('1.4.0');
+    expect(outcome.result.versions?.knowledgeVersion).toBe('1.5.0');
     expect(outcome.rotation).toBeDefined();
     expect(outcome.rotation?.scenario).toBe('st');
-    expect(outcome.rotation?.knowledge.knowledgeVersion).toBe('1.4.0');
+    expect(outcome.rotation?.knowledge.knowledgeVersion).toBe('1.5.0');
 
     // The salvo-12 missiles misuse must surface as a rotation mistake merged
     // into the final findings (Phase E/F verdict stream through AppService).

@@ -64,6 +64,42 @@ export interface ComparisonView {
         correctRateTheirs?: number | undefined;
       }
     | undefined;
+  /** Burst-vs-filler phase split (cast-anchored bucketing). */
+  phase?:
+    | {
+        comparable: boolean;
+        anchorsMine: Array<{ name: string; castCount: number }>;
+        anchorsTheirs: Array<{ name: string; castCount: number }>;
+        inBurstDecisionsMine: number;
+        inBurstDecisionsTheirs: number;
+        fillerDecisionsMine: number;
+        fillerDecisionsTheirs: number;
+        perWindowDecisionsMine?: number | undefined;
+        perWindowDecisionsTheirs?: number | undefined;
+        inBurstCorrectRateMine?: number | undefined;
+        inBurstCorrectRateTheirs?: number | undefined;
+        fillerCorrectRateMine?: number | undefined;
+        fillerCorrectRateTheirs?: number | undefined;
+      }
+    | undefined;
+  /** Per-rule obedience: condition held → how often the demanded action. */
+  rules?:
+    | {
+        rules: Array<{
+          ruleId: string;
+          label: string;
+          mineDecisions: number;
+          mineAdherenceRate?: number | undefined;
+          theirsDecisions: number;
+          theirsAdherenceRate?: number | undefined;
+          deltaPp?: number | undefined;
+          mineMistakes: number;
+          theirsMistakes: number;
+          confidence?: number | undefined;
+          comparable: boolean;
+        }>;
+      }
+    | undefined;
   findingsOnlyMine: string[];
   findingsShared: string[];
 }
@@ -151,6 +187,58 @@ export function buildComparisonView(
       ...(r.correctRateTheirs !== undefined
         ? { correctRateTheirs: r.correctRateTheirs }
         : {}),
+    };
+  }
+
+  if (comparison.phase !== undefined) {
+    const p = comparison.phase;
+    view.phase = {
+      comparable: p.comparable,
+      anchorsMine: p.mine.anchors.map((a) => ({ name: a.name, castCount: a.castCount })),
+      anchorsTheirs: p.theirs.anchors.map((a) => ({ name: a.name, castCount: a.castCount })),
+      inBurstDecisionsMine: p.mine.inBurstDecisions,
+      inBurstDecisionsTheirs: p.theirs.inBurstDecisions,
+      fillerDecisionsMine: p.mine.fillerDecisions,
+      fillerDecisionsTheirs: p.theirs.fillerDecisions,
+      ...(p.mine.perWindowDecisions !== undefined
+        ? { perWindowDecisionsMine: p.mine.perWindowDecisions }
+        : {}),
+      ...(p.theirs.perWindowDecisions !== undefined
+        ? { perWindowDecisionsTheirs: p.theirs.perWindowDecisions }
+        : {}),
+      ...(p.mine.inBurstCorrectRate !== undefined
+        ? { inBurstCorrectRateMine: p.mine.inBurstCorrectRate }
+        : {}),
+      ...(p.theirs.inBurstCorrectRate !== undefined
+        ? { inBurstCorrectRateTheirs: p.theirs.inBurstCorrectRate }
+        : {}),
+      ...(p.mine.fillerCorrectRate !== undefined
+        ? { fillerCorrectRateMine: p.mine.fillerCorrectRate }
+        : {}),
+      ...(p.theirs.fillerCorrectRate !== undefined
+        ? { fillerCorrectRateTheirs: p.theirs.fillerCorrectRate }
+        : {}),
+    };
+  }
+
+  if (comparison.rules !== undefined) {
+    view.rules = {
+      rules: comparison.rules.rules.map((r) => {
+        const out: NonNullable<ComparisonView['rules']>['rules'][number] = {
+          ruleId: r.ruleId,
+          label: r.label,
+          mineDecisions: r.mine.decisions,
+          theirsDecisions: r.theirs.decisions,
+          mineMistakes: r.mineMistakes,
+          theirsMistakes: r.theirsMistakes,
+          comparable: r.comparable,
+        };
+        if (isFiniteNumber(r.mine.adherenceRate)) out.mineAdherenceRate = r.mine.adherenceRate;
+        if (isFiniteNumber(r.theirs.adherenceRate)) out.theirsAdherenceRate = r.theirs.adherenceRate;
+        if (isFiniteNumber(r.deltaPp)) out.deltaPp = r.deltaPp;
+        if (isFiniteNumber(r.confidence)) out.confidence = r.confidence;
+        return out;
+      }),
     };
   }
 

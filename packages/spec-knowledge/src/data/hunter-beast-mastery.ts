@@ -33,7 +33,7 @@ export const BEAST_MASTERY_KNOWLEDGE: SpecKnowledge = {
   specName: 'Beast Mastery',
   className: 'Hunter',
   patch: 'current',
-  knowledgeVersion: '1.0.0',
+  knowledgeVersion: '1.1.0',
   effectiveFrom: '2026-01-01',
 
   abilities: [
@@ -131,6 +131,8 @@ export const BEAST_MASTERY_KNOWLEDGE: SpecKnowledge = {
       name: '狂野怒火 (Bestial Wrath)',
       cooldownMs: 90_000,
       kind: 'offensive',
+      // 15s buff window (wowhead/icy-veins); cast-anchored burst bucketing only.
+      burstDurationMs: 15_000,
       source: EXISTING_RULES,
       confidence: 0.9,
     },

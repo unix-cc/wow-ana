@@ -71,6 +71,23 @@ export interface CooldownKnowledge {
   name: string;
   cooldownMs: number;
   kind: 'offensive' | 'defensive';
+  /**
+   * Burst-window duration in ms when this cooldown opens a distinct
+   * "burst phase" (e.g. Arcane Surge's empowered window, Avatar's 20 s
+   * buff). Absent = the cooldown is NOT a burst anchor: short builders
+   * (Arcane Orb, Kill Command) and marker/debuff abilities (Colossus
+   * Smash, Execution Sentence) deliberately carry no value.
+   *
+   * Cast-anchored semantics: the burst window is
+   * `[castTime, castTime + burstDurationMs]` — WCL's Buffs channel does
+   * not return burst-aura events (verified on real logs, 2026-09), so the
+   * window is anchored to the cast timestamp, not to aura state.
+   *
+   * The value is game knowledge (wowhead/icy-veins spell durations), an
+   * approximation for window bucketing — it NEVER feeds a verdict, it only
+   * decides which decisions are counted as in-burst vs filler.
+   */
+  burstDurationMs?: number | undefined;
   source: KnowledgeSource;
   confidence: number;
 }

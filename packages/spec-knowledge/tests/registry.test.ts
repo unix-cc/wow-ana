@@ -19,7 +19,7 @@ describe('SpecKnowledgeRegistry', () => {
     const registry = createDefaultRegistry();
     const knowledge = registry.resolve(bmPlayer());
     expect(knowledge?.specName).toBe('Beast Mastery');
-    expect(knowledge?.knowledgeVersion).toBe('1.0.0');
+    expect(knowledge?.knowledgeVersion).toBe('1.1.0');
   });
 
   it('falls back to the spec name when specId is absent', () => {
@@ -58,7 +58,7 @@ describe('SpecKnowledgeRegistry', () => {
 
     // A 2026 fight (after effectiveFrom) gets the current entry.
     const live = registry.resolve(bmPlayer(), Date.parse('2026-06-01T00:00:00Z'));
-    expect(live?.knowledgeVersion).toBe('1.0.0');
+    expect(live?.knowledgeVersion).toBe('1.1.0');
   });
 
   it('without a fight time prefers the newest version', () => {

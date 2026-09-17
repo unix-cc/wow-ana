@@ -21,6 +21,7 @@ const INLINE_RUNS = 3;
 export function ReferenceCard({
   reference,
   onCompare,
+  onCompareRun,
 }: {
   reference: ArtifactReference;
   /**
@@ -29,6 +30,12 @@ export function ReferenceCard({
    * than something every analysis does.
    */
   onCompare?: (() => void) | undefined;
+  /**
+   * Compare against a specific pool entry (1-based rank, Phase AI). The
+   * button sends a normal user message like "…对比一下 #3" so the turn is
+   * reproducible in the transcript.
+   */
+  onCompareRun?: ((rank: number) => void) | undefined;
 }): JSX.Element {
   const [expanded, setExpanded] = useState(false);
   const { stats, player, poolLevels, keyLevel, topRuns } = reference;
@@ -123,6 +130,15 @@ export function ReferenceCard({
                   </a>
                 ) : (
                   <span className="reference-run-nolink">无日志</span>
+                )}
+                {onCompareRun !== undefined && (
+                  <button
+                    type="button"
+                    className="reference-run-compare"
+                    onClick={() => onCompareRun(index + 1)}
+                  >
+                    对比此人
+                  </button>
                 )}
               </li>
             ))}

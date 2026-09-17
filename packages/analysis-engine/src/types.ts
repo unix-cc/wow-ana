@@ -16,8 +16,19 @@ import type { AnalysisContext, AnalysisVersion, Finding } from '@wcl/domain';
  * run can be *located* and re-analysed head-to-head (Phase AF). Cached rows
  * lack those fields, so the cache must be invalidated for the comparison to
  * work on previously analysed fights.
+ *
+ * 0.13.0 — rotation digest gains a cast-anchored burst-phase split
+ * (`burstWindows` in the evaluator, `rotation.burst` in the digest, `phase`
+ * in the head-to-head comparison). Cached digests lack the new field, so the
+ * cache must be invalidated for the burst-vs-filler comparison to appear.
+ *
+ * 0.14.0 — rotation digest gains per-rule adherence (`rotation.rules`, then
+ * `rules` in the head-to-head comparison): when a Condition→Action rule was
+ * the expected action, how often the player obeyed it. Cached digests lack
+ * the new field, so the cache must be invalidated for the rule-level
+ * comparison to appear.
  */
-export const ANALYZER_VERSION = '0.12.0';
+export const ANALYZER_VERSION = '0.14.0';
 
 /**
  * A deterministic analysis rule. Each rule inspects the provided context and

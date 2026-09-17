@@ -382,6 +382,53 @@ export function buildCombatFactsView(set: FactSet): CombatFactsView {
  * breakdown + a bounded sample of the decisions a coach would cite, dropping
  * the full decision table.
  */
+export interface RuleAdherenceEntry {
+  ruleId: string;
+  /** Ability key the rule demands (knowledge key, e.g. `arcane_barrage`). */
+  actionKey: string;
+  /** Spell id of the demanded ability, for display-name lookup. */
+  actionAbilityId?: number | undefined;
+  /** Times this rule became the expected action (condition held). */
+  decisions: number;
+  /** Times the player actually cast the demanded action. */
+  obeyed: number;
+  correct: number;
+  suboptimal: number;
+  mistake: number;
+  unknown: number;
+  /** Rule confidence (constant per rule). */
+  confidence?: number | undefined;
+}
+
+export interface RuleAdherenceDigest {
+  /** Adherence per rule, most-decision-first, capped. */
+  rules: RuleAdherenceEntry[];
+  capped: boolean;
+}
+
+export interface BurstPhaseDigest {
+  /**
+   * Burst anchors declared by knowledge (including zero-cast ones), capped.
+   * `castCount` is how many windows actually opened.
+   */
+  anchors: Array<{
+    key: string;
+    name: string;
+    castCount: number;
+    durationMs: number;
+  }>;
+  /** Decisions inside any burst window (incl. the burst casts themselves). */
+  inBurstDecisions: number;
+  /** Decisions outside every burst window. */
+  fillerDecisions: number;
+  /** Sum of all cast windows (castCount × durationMs), ms. */
+  totalBurstMs: number;
+  /** Correct share of *decided* (non-unknown) in-burst decisions, %. */
+  inBurstCorrectRate?: number | undefined;
+  /** Correct share of *decided* (non-unknown) filler decisions, %. */
+  fillerCorrectRate?: number | undefined;
+}
+
 export interface RotationDigest {
   scenario: 'st' | 'aoe' | 'unknown';
   breakdown: Record<string, number>;
@@ -418,11 +465,30 @@ export interface RotationDigest {
     flagged: number;
   }>;
   engagementsCapped?: boolean;
+  /**
+   * Cast-anchored burst-phase bucketing (probe-verified 2026-09: WCL's Buffs
+   * channel does not return burst-aura events). Present when the spec
+   * declares burst anchors. Bucketing only — never feeds a verdict.
+   */
+  burst?: BurstPhaseDigest | undefined;
+  /**
+   * Per-rule adherence: when a Condition→Action rule was the expected
+   * action, how often the player actually cast its demanded ability. The
+   * head-to-head comparison uses this to say "when the condition held, the
+   * top player obeyed X% of the time, you obeyed Y%" — rule-level, not
+   * aggregate-rate-level. Rule confidence rides along so callers can
+   * suppress low-confidence rows from accusations.
+   */
+  rules?: RuleAdherenceDigest | undefined;
 }
 
 const ROTATION_DIGEST_OPTIONS = {
   /** Sample per deviation verdict. */
   perVerdict: 4,
+  /** Burst anchors surfaced in the digest. */
+  burstAnchors: 5,
+  /** Per-rule adherence rows surfaced (by decision count). */
+  adherenceRules: 12,
   /** Decision-time gap that splits two combat segments (ms). */
   engagementGapMs: 15_000,
   /** Max engagement rows kept in the digest. */
@@ -508,6 +574,113 @@ export function buildRotationDigest(
       digest.engagementsCapped = segments.length > ROTATION_DIGEST_OPTIONS.engagements;
       digest.engagements = segments.slice(0, ROTATION_DIGEST_OPTIONS.engagements);
     }
+  }
+
+  // ---- burst-phase bucketing (cast-anchored, bucketing only)
+  if (result.burstWindows !== undefined && result.burstWindows.length > 0) {
+    const anchors = result.burstWindows
+      .slice(0, ROTATION_DIGEST_OPTIONS.burstAnchors)
+      .map((w) => ({
+        key: w.key,
+        name: w.name,
+        castCount: w.casts.length,
+        durationMs: w.durationMs,
+      }));
+    let inBurstDecisions = 0;
+    let fillerDecisions = 0;
+    let inBurstDecided = 0;
+    let inBurstCorrect = 0;
+    let fillerDecided = 0;
+    let fillerCorrect = 0;
+    let totalBurstMs = 0;
+    for (const window of result.burstWindows) {
+      totalBurstMs += window.casts.length * window.durationMs;
+    }
+    for (const decision of result.decisions) {
+      if (decision.inBurst === true) {
+        inBurstDecisions += 1;
+        if (decision.verdict !== 'unknown') {
+          inBurstDecided += 1;
+          if (decision.verdict === 'correct') inBurstCorrect += 1;
+        }
+      } else {
+        fillerDecisions += 1;
+        if (decision.verdict !== 'unknown') {
+          fillerDecided += 1;
+          if (decision.verdict === 'correct') fillerCorrect += 1;
+        }
+      }
+    }
+    const burst: BurstPhaseDigest = {
+      anchors,
+      inBurstDecisions,
+      fillerDecisions,
+      totalBurstMs,
+    };
+    if (inBurstDecided > 0) {
+      burst.inBurstCorrectRate = Math.round((inBurstCorrect / inBurstDecided) * 1000) / 10;
+    }
+    if (fillerDecided > 0) {
+      burst.fillerCorrectRate = Math.round((fillerCorrect / fillerDecided) * 1000) / 10;
+    }
+    digest.burst = burst;
+  }
+
+  // ---- per-rule adherence (Condition→Action rule-level obedience)
+  const byRule = new Map<
+    string,
+    {
+      ruleId: string;
+      actionKey: string;
+      actionAbilityId?: number | undefined;
+      decisions: number;
+      obeyed: number;
+      correct: number;
+      suboptimal: number;
+      mistake: number;
+      unknown: number;
+      confidence?: number | undefined;
+    }
+  >();
+  for (const decision of result.decisions) {
+    const ruleId = decision.expectedRuleId;
+    if (ruleId === undefined) continue;
+    let entry = byRule.get(ruleId);
+    if (entry === undefined) {
+      entry = {
+        ruleId,
+        actionKey: decision.expectedKey ?? '?',
+        decisions: 0,
+        obeyed: 0,
+        correct: 0,
+        suboptimal: 0,
+        mistake: 0,
+        unknown: 0,
+      };
+      if (decision.expectedAbilityId !== undefined) {
+        entry.actionAbilityId = decision.expectedAbilityId;
+      }
+      if (decision.confidence !== undefined) {
+        entry.confidence = decision.confidence;
+      }
+      byRule.set(ruleId, entry);
+    }
+    entry.decisions += 1;
+    if (decision.actualKey === entry.actionKey) entry.obeyed += 1;
+    if (decision.verdict === 'correct') entry.correct += 1;
+    else if (decision.verdict === 'suboptimal') entry.suboptimal += 1;
+    else if (decision.verdict === 'mistake') entry.mistake += 1;
+    else if (decision.verdict === 'unknown') entry.unknown += 1;
+  }
+  if (byRule.size > 0) {
+    const rules = [...byRule.values()].sort(
+      (a, b) => b.decisions - a.decisions,
+    );
+    const capped = rules.length > ROTATION_DIGEST_OPTIONS.adherenceRules;
+    digest.rules = {
+      capped,
+      rules: rules.slice(0, ROTATION_DIGEST_OPTIONS.adherenceRules),
+    };
   }
 
   return digest;
