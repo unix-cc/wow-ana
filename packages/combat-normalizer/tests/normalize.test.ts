@@ -54,6 +54,42 @@ describe('normalizeEvent', () => {
     expect(debuff.type).toBe('debuff');
   });
 
+  it('keeps unmitigatedAmount / overkill so dummy-log damage is not clamped to 1', () => {
+    const nearDead = normalizeEvent(
+      {
+        timestamp: 1,
+        type: 'damage',
+        amount: 1,
+        unmitigatedAmount: 5_905,
+        overkill: 12_287,
+        hitType: 2,
+      },
+      1,
+    );
+    expect(nearDead.type).toBe('damage');
+    expect(nearDead.amount).toBe(1);
+    expect(nearDead.unmitigatedAmount).toBe(5_905);
+    expect(nearDead.overkill).toBe(12_287);
+
+    const plain = normalizeEvent({ timestamp: 2, type: 'damage', amount: 900 }, 1);
+    expect(plain.unmitigatedAmount).toBeUndefined();
+    expect(plain.overkill).toBeUndefined();
+  });
+
+  it('keeps the buff stack count (applybuffstack → 2, plain applybuff → undefined)', () => {
+    const toTwo = normalizeEvent(
+      { timestamp: 1, type: 'applybuffstack', stack: 2, abilityGameID: 1256322 },
+      1,
+    );
+    // 层数事件目前不进 TYPE_MAP（仍归一化为 'other'）：把它们并入 buff 会改变
+    // 覆盖率类统计的口径，需要单独评估。消费方按 rawType 判断即可。
+    expect(toTwo.rawType).toBe('applybuffstack');
+    expect(toTwo.stack).toBe(2);
+
+    const first = normalizeEvent({ timestamp: 2, type: 'applybuff', abilityGameID: 1256322 }, 1);
+    expect(first.stack).toBeUndefined();
+  });
+
   it('passes the heal overheal portion through (amount 0 + overheal > 0 = fully overhealed)', () => {
     const fully = normalizeEvent(
       {

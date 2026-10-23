@@ -1,4 +1,12 @@
 import { describe, it, expect, vi } from 'vitest';
+
+// 站点 origin 来自 `WCL_API_URL`（`.env`），而下面的断言把 cn 站的完整 URL 写死了。
+// 不定住它，测试结果就取决于开发者本机的 .env：指向 www 时整组 URL 断言全红。
+// 这里在 import 之前钉死环境变量，让测试只验证「URL 怎么拼」，不验证「部署在哪个站」。
+vi.hoisted(() => {
+  process.env.WCL_API_URL = 'https://cn.warcraftlogs.com/api/v2/client';
+});
+
 import {
   AppService,
   classForPlayer,

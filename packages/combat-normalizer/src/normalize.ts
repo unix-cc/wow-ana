@@ -62,6 +62,14 @@ export function normalizeEvent(
   const timestamp = typeof raw.timestamp === 'number' ? raw.timestamp : 0;
   const hitTypeRaw = typeof raw.hitType === 'number' ? raw.hitType : undefined;
   const amount = typeof raw.amount === 'number' ? raw.amount : undefined;
+  // 目标濒死时 WCL 把 amount 钳到 1 并把差值塞进 overkill（假人日志的常态），
+  // 所以伤害量必须同时保留 unmitigatedAmount，否则「伤害对比」会全部退化成 1。
+  const unmitigatedAmount =
+    typeof raw.unmitigatedAmount === 'number' ? raw.unmitigatedAmount : undefined;
+  const overkill = typeof raw.overkill === 'number' ? raw.overkill : undefined;
+  // buff 事件的层数：只有 applybuffstack / removebuffstack / refreshbuff 带 stack，
+  // 普通 applybuff 不带（此时应视为 1 层）。
+  const stack = typeof raw.stack === 'number' ? raw.stack : undefined;
   // WCL heal rows carry the overhealed portion separately (fully-overhealed
   // rows are amount 0 + overheal > 0) — verified live on 2026-09-09.
   const overheal = typeof raw.overheal === 'number' ? raw.overheal : undefined;
@@ -79,6 +87,9 @@ export function normalizeEvent(
     abilityId: numberOr(raw.abilityGameID) ?? ability?.guid,
     abilityName,
     amount,
+    unmitigatedAmount,
+    overkill,
+    stack,
     overheal,
     resourceType: strOr(raw.resourceType),
     resourceAmount,

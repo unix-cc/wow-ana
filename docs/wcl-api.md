@@ -1,5 +1,8 @@
 # WCL API
 
+> 本文只讲**端点、查询字段和已知坑**。
+> 「只许用 v2、失败怎么升级、凭据纪律」属于硬约束，见 `CONSTRAINTS.md` §3，不在此重复。
+
 ## 认证
 
 使用 WCL OAuth2 `client_credentials` 流程获取 Access Token。
@@ -50,6 +53,19 @@
 - **不能按钥石层过滤**：`hardModeLevel` 枚举里没有钥石等级值，池子恒为「该本最高层前 N 名」。
   对外措辞必须写成「池内实际层级区间」，不能说「同层分位」。
 
+
+## 事件字段的两个坑（2026-10-23 实测）
+
+**1. `amount` 会被钳成 1。** 目标濒死（训练假人日志的常态）时，WCL 把实际伤害钳到
+`amount: 1`，差值塞进 `overkill`，真实数值只在 `unmitigatedAmount`。
+归一化层已保留 `unmitigatedAmount` / `overkill`（`CombatEvent`）—— 做任何伤害对比都用前者，
+否则整场看起来像"每发 1 点伤害"。实测样本：`mnNQW16gjB9azRYx` 全部 fight。
+
+**2. buff 层数只在部分事件上。** `stack` 字段仅出现在 `applybuffstack` /
+`removebuffstack` / `refreshbuff`；普通 `applybuff` 不带（应视为 1 层）。
+另外 `applybuffstack` / `removebuffstack` **不在** `TYPE_MAP` 里，归一化后 `type` 是 `other`
+（`rawType` 仍保留）。想重建资源曲线（如虚落 3 层）必须按 `rawType` 判断；
+把它们并入 `buff` 会改变覆盖率类统计的口径，需单独评估后再动。
 
 ## 分页
 
