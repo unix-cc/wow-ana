@@ -1,0 +1,9 @@
+#!/bin/sh
+# 仓库唯一 pre-commit 入口。规则见 CONSTRAINTS.md §5。
+#
+# 只用 node，不调 pnpm：本机 Git Bash 下 corepack shim 会把路径错转成
+# C:\c\develop\... 而报 Cannot find module（见 AGENTS.md 的 Windows 注意）。
+#
+# 这里只跑「快且致命」的约束检查（<2s）。类型检查/测试属于 L2，在声称完成前
+# 手动跑 `pnpm build && pnpm test`，不放进提交钩子。
+node scripts/check-constraints.mjs || exit 1

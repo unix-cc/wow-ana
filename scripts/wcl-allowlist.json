@@ -1,0 +1,17 @@
+{
+  "$comment": "允许出现 warcraftlogs.com API 端点字面量的文件白名单。由 scripts/check-constraints.mjs 读取。新增条目 = 显式决定「多开一条通道」，必须写理由；新增数据访问应优先落进 packages/wcl-client。规则见 CONSTRAINTS.md §3。",
+  "files": {
+    "packages/shared/src/config.ts": "默认端点字符串（WCL_API_URL 的 Zod 默认值），本身不发请求。",
+    "packages/wcl-client/src/site.ts": "从 API URL 派生站点 origin 用于生成报告链接；注释里含端点示例，不发请求。",
+    "packages/wcl-client/tests/auth.test.ts": "断言 www / cn 两个 host 的 token URL 派生正确。",
+    "packages/wcl-client/tests/site.test.ts": "断言站点 origin 派生正确。",
+    "scripts/wcl-credentials.mjs": "凭据诊断：唯一允许的裸 OAuth 调用，只做 token + 一次报告元数据查询，不取战斗数据。",
+    "scripts/sync-ability-names.mjs": "离线技能名同步：只读 gameData.ability 把技能 ID 映射成官方 zh-CN 名，不参与战斗分析。",
+    "scripts/_introspect-rank.mjs": "历史只读探针（排行榜 schema 反查）。冻结，禁止新增同类脚本。",
+    "scripts/_probe-classnames.mjs": "历史只读探针（类名/专精名反查）。冻结，禁止新增同类脚本。",
+    "scripts/_probe-hardmode.mjs": "历史只读探针（hardModeLevel 枚举验证）。冻结，禁止新增同类脚本。",
+    "scripts/_probe-locale.mjs": "历史只读探针（本地化返回验证）。冻结，禁止新增同类脚本。",
+    "scripts/_probe-rankfilter.mjs": "历史只读探针（排行榜过滤能力验证）。冻结，禁止新增同类脚本。",
+    "packages/application/tests/app-service.test.ts": "测试用 vi.hoisted 钉死 WCL_API_URL，让 URL 断言不依赖本机 .env（红线 #11）。"
+  }
+}

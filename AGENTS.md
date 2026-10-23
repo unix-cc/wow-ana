@@ -22,6 +22,24 @@ pnpm --filter @wcl/wcl-client test   # 单独运行某包测试
 > `C:\c\develop\...` 而报 `Cannot find module`。**用 PowerShell 跑 pnpm 正常**；
 > Git Bash 下可退化为 `node "C:/develop/env/nvm/nodejs/node_modules/corepack/dist/pnpm.js" <args>`
 > 或直接用 `npx tsc -p <pkg>/tsconfig.json` / `npx vitest run`。
+>
+> **顺序陷阱**：workspace 包的类型经 `dist` 解析，所以 `pnpm typecheck` **不是**独立门禁，
+> 未 build 时会报一堆 `TS2307 Cannot find module '@wcl/domain'`（看着像代码坏了）。
+> 正确顺序：`pnpm build && pnpm test`。
+
+## 硬约束（违反即停，完整规则见 `CONSTRAINTS.md`）
+
+- **访问 WCL 只允许 v2 GraphQL API**：`<origin>/oauth/token` 取 token，`<origin>/api/v2/client` 查询。
+  取数一律经 `packages/wcl-client`；脚本不许手写 `fetch` 打 GraphQL。
+  ❌ 网页抓取 `/reports/...`、无头浏览器/HTML 解析、v1 API、第三方镜像或他人导出的 CSV。
+- **API 不通就停下交给用户**，不要换通道。判断顺序：`401 invalid_client`=凭据错/截断、
+  `403 + Just a moment`=走错通道、`404/report:null`=报告不可见或站点不对、`429`=限流、
+  `graphql errors`=查询写错（自己改）。
+- 升级必须给四段：**现象（命令+脱敏报错）/ 已排除 / 需要你做（≤3 步带链接）/ 修好后跑哪条命令**。
+  用户修完 **重跑同一条命令** 验证，不得改用别的路径。
+- **拿不到数据就写「未获取（原因）」**，禁止估算、外推、用旧数据凑数。
+- 机制类结论必须标证据等级（A 自己的日志事件 / B 官方 spell 数据 / C 社区实测 / D 推断），
+  且 B/C 不能替代 A。
 
 ## 架构约束
 
