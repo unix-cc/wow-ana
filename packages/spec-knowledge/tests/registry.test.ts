@@ -37,6 +37,19 @@ describe('SpecKnowledgeRegistry', () => {
     ).toBeUndefined();
   });
 
+  it('resolves Vengeance DH by spec name (the WCL actor feed has no spec id)', () => {
+    const registry = createDefaultRegistry();
+    const knowledge = registry.resolve(
+      bmPlayer({
+        specId: undefined,
+        specName: 'Vengeance',
+        className: 'DemonHunter',
+      }),
+    );
+    expect(knowledge?.specName).toBe('Vengeance');
+    expect(knowledge?.patch).toBe('12.1.5');
+  });
+
   it('selects the version that was live at the fight date', () => {
     const current = createDefaultRegistry().getBySpecId(253) as NonNullable<
       ReturnType<SpecKnowledgeRegistry['getBySpecId']>

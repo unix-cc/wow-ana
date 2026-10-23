@@ -6,6 +6,7 @@ import { ElementalShamanAnalyzer } from './shaman/elemental/analyzer.js';
 import { BloodDeathKnightAnalyzer } from './death-knight/blood/analyzer.js';
 import { RetributionPaladinAnalyzer } from './paladin/retribution/analyzer.js';
 import { ArmsWarriorAnalyzer } from './warrior/arms/analyzer.js';
+import { VengeanceDemonHunterAnalyzer } from './demon-hunter/vengeance/analyzer.js';
 
 /**
  * Registry mapping a player's spec to a specialization analyzer.
@@ -24,6 +25,7 @@ export class SpecRegistry {
     const blood = new BloodDeathKnightAnalyzer();
     const retribution = new RetributionPaladinAnalyzer();
     const arms = new ArmsWarriorAnalyzer();
+    const vengeance = new VengeanceDemonHunterAnalyzer();
 
     // WCL spec ids: Beast Mastery 253, Arcane 62, Elemental 262, Blood 250,
     // Retribution 70, Arms 71.
@@ -40,8 +42,11 @@ export class SpecRegistry {
     this.bySpecName.set('Blood', blood);
     this.bySpecName.set('Retribution', retribution);
     this.bySpecName.set('Arms', arms);
+    // 复仇 DH：WCL 的 actor 数据只给 specName、不给 spec id（2026-10-23 实测），
+    // 所以按名字注册。等日志里真的出现 specId 再补 581。
+    this.bySpecName.set('Vengeance', vengeance);
 
-    this.defaultAnalyzers = [bm, arcane, elemental, blood, retribution, arms];
+    this.defaultAnalyzers = [bm, arcane, elemental, blood, retribution, arms, vengeance];
   }
 
   findForPlayer(player: Player): SpecAnalyzer | undefined {

@@ -6,6 +6,7 @@ import {
   BLOOD_DEATH_KNIGHT_KNOWLEDGE,
   RETRIBUTION_PALADIN_KNOWLEDGE,
   ARMS_WARRIOR_KNOWLEDGE,
+  VENGEANCE_DEMON_HUNTER_KNOWLEDGE,
 } from '../src/index.js';
 import { canEscalateToMistake } from '@wcl/domain';
 
@@ -348,5 +349,49 @@ describe('knowledge structure', () => {
       (buff) => buff.abilityId === undefined,
     );
     expect(pendingBuffs.map((b) => b.key)).toEqual(['arcane_charge']);
+  });
+
+  it('ships Vengeance DH as knowledge-only, with an empty priority list on purpose', () => {
+    const vdh = VENGEANCE_DEMON_HUNTER_KNOWLEDGE;
+    expect(vdh.specName).toBe('Vengeance');
+    expect(vdh.className).toBe('Demon Hunter');
+    expect(ALL.map((e) => e.specName)).toContain('Vengeance');
+
+    // WCL's actor feed for the reference logs carries specName but no specId
+    // (verified 2026-10-23) — the entry must not invent one.
+    expect(vdh.specId).toBeUndefined();
+
+    // Voidfall stacks are phase-shifted in the event stream (stack events land
+    // with meteor impacts, not with casts), so no stack-gated rule may exist:
+    // it would read the wrong state and manufacture findings.
+    expect(vdh.priority).toHaveLength(0);
+    const stackRules = vdh.priority.filter(
+      (rule) => (rule.when.buffStacks ?? []).length > 0,
+    );
+    expect(stackRules).toHaveLength(0);
+
+    const voidfall = vdh.buffs.find((b) => b.key === 'voidfall');
+    expect(voidfall?.abilityId).toBe(1256322);
+    expect(voidfall?.stacks).toBe(true);
+
+    // Ability ids came off real events, so they must be present and exact.
+    const idOf = (key: string) =>
+      vdh.abilities.find((a) => a.key === key)?.abilityId;
+    expect(idOf('soul_cleave')).toBe(228477);
+    expect(idOf('spirit_bomb')).toBe(247454);
+    expect(idOf('metamorphosis')).toBeUndefined();
+    expect(
+      vdh.cooldowns.find((c) => c.key === 'metamorphosis')?.abilityId,
+    ).toBe(187827);
+
+    // The mechanics we actually proved live in notes, each with a source.
+    expect(vdh.notes?.length).toBeGreaterThan(0);
+    for (const note of vdh.notes ?? []) {
+      expect(note.source.reference.length).toBeGreaterThan(0);
+      expect(note.content.length).toBeGreaterThan(0);
+    }
+    const ids = (vdh.notes ?? []).map((n) => n.id);
+    expect(ids).toContain('vdh.meteoric_fall_settlement');
+    expect(ids).toContain('vdh.dark_matter_window');
   });
 });

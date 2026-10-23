@@ -111,6 +111,11 @@ Aggregation 层（如 `AppService.analyzePlayer`）在合并所有 findings 后�
 | 奥法 Arcane          | Clearcasting 浪费、奥术充能溢出、Arcane Surge 延迟（含未使用）、GCD 空转                 | Blast 30451 / Missiles 5143 / Barrage 44425 / Surge 365350 / Clearcasting 263725   |
 | 元素萨 Elemental     | 烈焰震击覆盖、Lava Surge 浪费、Stormkeeper 延迟、Fire Elemental 延迟（含未使用）、GCD 空转 | Flame Shock 188389 / Lava Burst 51505 / Stormkeeper 191634 / Fire Elemental 198067 |
 | 血DK Blood           | Bone Shield 覆盖、Vampiric Blood 延迟、Dancing Rune Weapon 延迟（含未使用）、GCD 空转      | Death Strike 49998 / Marrowrend 195182 / Bone Shield 195181 / VB 55233 / DRW 49028 |
+| 复仇DH Vengeance     | 迅疾流星按撞击时刻还原、暗物质漏结算检测（机制层面，不产 verdict）                          | Meteor 1256306 / World Killer 1256617 / Dark Matter 1264130 / Bomb 247454 / Meta 187827 |
+
+> 复仇 DH 的 `priority` 故意为空：虚落层数在事件流里与流星落地同刻出现，按键层面的层数
+> 不可还原，任何 `buffStacks` 规则都会误判（见 `docs/vdh-meteor-12.1.5.md` §11）。
+> 它目前只提供 metrics（`meteors` / `darkMatter`）与一条机制缺失检测 `vdh.dark_matter_missing`。
 
 > 事件数据只携带 `abilityId`（WCL 不返回技能名），因此上面技能 ID 都经过真实
 > 日志验证，勿随意改动；规则同时按名字兜底匹配。
